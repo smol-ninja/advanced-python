@@ -1,0 +1,11 @@
+STE language revision
+
+All 39 lessons, example explanations, and quiz explanations use the STE guidance.
+The language reference is the official ASD-STE100 Issue 9.
+All 39 browser chapter routes retain a two-minute estimate and three quiz questions.
+The quiz time is not part of the lesson estimate.
+There are no optional sections, summaries, or exercises.
+Executable code, expected output, and all answer keys are unchanged.
+The equality example executed in the browser with the expected output.
+Python method names, including __eq__, render with their underscores.
+JavaScript syntax checks passed.

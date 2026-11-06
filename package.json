@@ -1,0 +1,1 @@
+{"name":"python-masterclass-local","version":"1.0.0","private":true,"description":"A complete interactive 39-chapter Python textbook","scripts":{"start":"python3 serve.py"}}

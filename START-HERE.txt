@@ -1,0 +1,70 @@
+Python masterclass
+
+The website address is http://localhost:3000.
+The local server must operate before the browser can show the book.
+
+Start the server
+1. Open Terminal in this folder.
+2. Enter python3 serve.py.
+3. Open http://localhost:3000 in your browser.
+
+On macOS, Start.command can also start the server.
+Use Python 3.10 or a later version.
+The book includes its runtime files. No package installation or API key is necessary.
+If port 3000 is in use, enter python3 serve.py --port 3001.
+For that port, the address is http://localhost:3001.
+
+Stop the server
+1. Select the server terminal.
+2. Press Ctrl+C.
+
+Use a chapter
+1. Read the lesson and main example.
+2. Select Edit code to put the example in the editor.
+3. Change the code if necessary.
+4. Select Run code.
+5. Complete the quiz.
+6. Select Check answers.
+7. Select Mark chapter complete when you finish.
+
+Each lesson has a two-minute estimate.
+The estimate includes the lesson and main example.
+It does not include the quiz.
+Each chapter has one example and three quiz questions.
+There are no optional sections, summaries, or exercises.
+
+The browser executes code with the included Python 3.14 runtime.
+Each execution starts with new state.
+Files in that runtime are temporary virtual files.
+The Stop button ends execution.
+The app also stops execution after 10 seconds.
+
+The thread example in Chapter 38 uses Python installed on your computer.
+1. Select the download button for that example.
+2. Run python3 followed by the downloaded file path.
+
+The async browser example uses await main().
+Its downloaded script uses asyncio.run(main()).
+The example code has not changed during the language revision.
+
+Progress backups
+This browser keeps chapter status, saved chapters, quiz answers, and code drafts.
+A different browser or localhost port has different storage.
+Before you clear browser data, export a backup from Study progress.
+An import replaces the current saved data with the backup data.
+The existing backup format also keeps any notes from earlier editions.
+
+Files
+index.html, style.css, and app.js contain the reading application.
+chapters.json contains lesson text, examples, and quizzes.
+python-worker.js and vendor contain the browser Python runtime.
+serve.py and Start.command start the local server.
+
+Language
+The text uses the guidance in ASD-STE100 Issue 9.
+Python identifiers, code, and expected output keep their technical forms.
+
+Software licenses
+The book includes Pyodide 314.0.7 and Marked 17.0.1.
+Their notices and license texts are in vendor.
+Reference links open the related primary sources.

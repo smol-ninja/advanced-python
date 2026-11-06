@@ -1,0 +1,6 @@
+This local textbook bundles Pyodide 314.0.7, including its WebAssembly Python runtime,
+and Marked 17.0.1. Pyodide is distributed under the Mozilla Public License 2.0.
+Python uses the Python Software Foundation license and associated notices.
+Marked is distributed under its MIT license. See licenses/ for included texts.
+Upstream projects: https://github.com/pyodide/pyodide and https://github.com/markedjs/marked.
+The Pyodide package's pyodide-lock.json lists its runtime components.

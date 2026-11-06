@@ -1,0 +1,2037 @@
+{
+  "title": "Python Masterclass",
+  "runtime": "3.14",
+  "syllabus": "Exact 39-chapter widget supplied by the user on 5 November 2026.",
+  "parts": [
+    {
+      "start": 1,
+      "end": 10,
+      "roman": "I",
+      "title": "Python's object and execution model",
+      "description": "Learn how Python handles names, objects, and function calls."
+    },
+    {
+      "start": 11,
+      "end": 17,
+      "roman": "II",
+      "title": "Classes and Python internals",
+      "description": "Define classes and use Python's object protocols."
+    },
+    {
+      "start": 18,
+      "end": 24,
+      "roman": "III",
+      "title": "Algorithms and data structures",
+      "description": "Compare lookup, insertion, sorting, and selection algorithms."
+    },
+    {
+      "start": 25,
+      "end": 32,
+      "roman": "IV",
+      "title": "Software design and architecture",
+      "description": "Refactor code and choose interfaces for changing behavior."
+    },
+    {
+      "start": 33,
+      "end": 39,
+      "roman": "V",
+      "title": "Concurrency, exceptions, and resources",
+      "description": "Handle failures, release resources, and coordinate concurrent work."
+    }
+  ],
+  "chapters": [
+    {
+      "id": 1,
+      "title": "Mutable default arguments",
+      "subtitle": "Python makes a default list when it defines the function.",
+      "body": "## One default object\nPython evaluates a default argument when the def statement runs. The function keeps the resulting object.\n\nFor `def collect(value, items=[])`, that object is one list. Each call without an items argument uses the same list. The append method changes that list. Thus, a later call sees the values from earlier calls.\n\nEach call has a separate local parameter. Separate parameters can refer to the same object. Assignment does not copy the object.\n\n## A new list for each call\nWith `items=None`, the function can make a list in each call. The condition `items is None` identifies this case.\n\nIf the caller supplies a list, the function uses that list. Changes to this list are visible to the caller.\n\nThe expression `items or []` also replaces an empty list from the caller. An empty list is false in a Boolean test. The None condition does not replace it.\n\n## A separate marker\nThe function can also accept None as input data. In that case, a unique object such as `_MISSING = object()` can identify an absent argument. The identity test `items is _MISSING` does not call custom equality code.\n\nThe `function.__defaults__` attribute contains positional defaults. A new function definition makes new default objects.",
+      "examples": [
+        {
+          "title": "Observe the shared default",
+          "code": "def collect(value, items=[]):\n    items.append(value)\n    return items\n\nfirst = collect(1)\nsecond = collect(2)\nprint(first)\nprint(second)\nprint(first is second)\nprint(collect.__defaults__)",
+          "output": "[1, 2]\n[1, 2]\nTrue\n([1, 2],)",
+          "explanation": "The two results refer to one default list. The second call changes the list that the first result also refers to.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "When does Python evaluate [] in def f(items=[])?",
+          "options": [
+            "On each call",
+            "When the definition executes",
+            "When the module exits"
+          ],
+          "answer": 1,
+          "explanation": "Python evaluates the defaults when the def statement runs."
+        },
+        {
+          "prompt": "Why can items = items or [] replace caller data?",
+          "options": [
+            "It rejects all lists",
+            "It replaces a valid empty list from the caller",
+            "It always shares a list"
+          ],
+          "answer": 1,
+          "explanation": "An empty list is false in a Boolean test. The caller can supply that list intentionally."
+        },
+        {
+          "prompt": "Which default can distinguish an absent argument when the function also accepts None?",
+          "options": [
+            "A private object() sentinel checked with is",
+            "The string \"None\"",
+            "Any falsey value"
+          ],
+          "answer": 0,
+          "explanation": "A unique object distinguishes an absent argument from each accepted value."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/tutorial/controlflow.html#default-argument-values",
+      "confirmed": true
+    },
+    {
+      "id": 2,
+      "title": "Equality versus identity",
+      "subtitle": "The == operator compares values. The is operator compares object identity.",
+      "body": "## Value and identity\nThe expression `a == b` tests equality. The expression `a is b` tests whether the two references refer to one object.\n\nTwo separate lists can contain equal values. Their equality test gives True, but their identity test gives False.\n\nAfter `b = a`, the two names refer to the same list. Assignment adds a reference. It does not copy the list.\n\n## A change to an object or a name\nThe call `a.append(3)` changes the existing list. The two names then show the changed contents.\n\nThe assignment `a = [4, 5]` changes which list the name a refers to. The name b refers to the initial list.\n\nFor lists, `a += [3]` changes the existing list. The expression `a = a + [3]` makes a different list. Other types can have different rules.\n\n## Special comparisons\nThe identity test `value is None` identifies the None singleton. A singleton has one object instance.\n\nA class can define value equality through `__eq__`. It cannot change the is operator. NotImplemented tells Python that `__eq__` does not support the other type.\n\nPython can use one integer or string object for multiple references. An identity test does not always give the same result as a value comparison.\n\nA NaN value compares unequal to itself. Its reference is identical to itself.",
+      "examples": [
+        {
+          "title": "Equal lists and shared references",
+          "code": "a = [1, 2, 3]\nb = [1, 2, 3]\nc = a\nprint(a == b, a is b)\nprint(a == c, a is c)\na.append(4)\nprint(b)\nprint(c)",
+          "output": "True False\nTrue True\n[1, 2, 3]\n[1, 2, 3, 4]",
+          "explanation": "The name b refers to a separate list. The name c refers to the same list as a.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Two different lists contain [1, 2]. What is true?",
+          "options": [
+            "== is True, is is False",
+            "The two are True",
+            "The two are False"
+          ],
+          "answer": 0,
+          "explanation": "The lists have equal contents but different object identities."
+        },
+        {
+          "prompt": "Why use value is None?",
+          "options": [
+            "It compares string values",
+            "It checks the singleton without custom equality",
+            "It makes a new None"
+          ],
+          "answer": 1,
+          "explanation": "The identity test does not call a custom __eq__ method."
+        },
+        {
+          "prompt": "Does x is y always imply x == y?",
+          "options": [
+            "Yes for each object",
+            "No. NaN or custom equality can break that implication",
+            "Only for large integers"
+          ],
+          "answer": 1,
+          "explanation": "A NaN reference is identical to itself, but the NaN value compares unequal to itself."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/reference/expressions.html#comparisons",
+      "confirmed": true
+    },
+    {
+      "id": 3,
+      "title": "Python slicing",
+      "subtitle": "A slice selects sequence positions with start, stop, and step values.",
+      "body": "## Slice positions\nThe expression `items[start:stop:step]` starts at start. It stops before stop. A positive step moves right. A negative step moves left.\n\nFor six items, `[1:5:2]` selects indices 1 and 3. Python limits slice bounds to the available positions. A one index outside the sequence raises IndexError. A slice step of zero raises ValueError.\n\n## Negative steps\nThe slice `items[::-1]` reverses the sequence. With a negative step, an absent start selects the last item. An absent stop lets the slice include index zero.\n\nAn explicit -1 refers to the last item. It differs from an absent stop. Thus, `items[3:-1:-1]` can be empty, while `items[3::-1]` includes the first item.\n\nThe method `slice(start, stop, step).indices(len(items))` shows normalized bounds. Those bounds can describe the selected positions with range.\n\n## Copies and changes\nA list slice makes a shallow copy. The outer list is new. Nested objects stay shared.\n\nAn assignment to a slice changes the existing list. The assignment `items[1:3] = [9]` can change its length.\n\nAn extended slice assignment must supply one replacement for each selected position. The reversed function instead gives reverse iteration without a different list.",
+      "examples": [
+        {
+          "title": "Exclusive stops and reverse defaults",
+          "code": "items = list(\"abcdef\")\nprint(items[1:5:2])\nprint(items[::-1])\nprint(items[3::-1])\nprint(items[3:-1:-1])\nprint(slice(None, None, -1).indices(len(items)))",
+          "output": "['b', 'd']\n['f', 'e', 'd', 'c', 'b', 'a']\n['d', 'c', 'b', 'a']\n[]\n(5, -1, -1)",
+          "explanation": "The normalized stop value -1 is a range boundary. It differs from an explicit -1 in the initial slice.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Which indices does range(6)[1:5:2] select?",
+          "options": [
+            "1, 3, 5",
+            "1, 3",
+            "2, 4"
+          ],
+          "answer": 1,
+          "explanation": "The slice excludes its stop at index 5."
+        },
+        {
+          "prompt": "What does list slicing copy?",
+          "options": [
+            "The outer list and all nested objects",
+            "Only the outer list, preserving element references",
+            "No object at all"
+          ],
+          "answer": 1,
+          "explanation": "The new outer list keeps references to the existing elements."
+        },
+        {
+          "prompt": "What happens with a step of zero?",
+          "options": [
+            "An empty list",
+            "The initial list",
+            "ValueError"
+          ],
+          "answer": 2,
+          "explanation": "A zero step cannot advance through the sequence. Python raises ValueError."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/library/stdtypes.html#common-sequence-operations",
+      "confirmed": true
+    },
+    {
+      "id": 4,
+      "title": "Integer division",
+      "subtitle": "The // operator rounds the quotient toward negative infinity.",
+      "body": "## Floor division\nIn Python 3, `7 / 2` gives the float 3.5. The expression `7 // 2` gives the integer 3.\n\nFloor division rounds toward negative infinity. Thus, `-7 // 2` gives -4. The int conversion instead removes the fractional part toward zero. It gives -3 for -3.5.\n\nIf either floor-division operand is a float, the result is usually a float, such as 3.0.\n\n## Quotient and remainder\nFor integer operands and a nonzero divisor, `a == (a // b) * b + (a % b)`.\n\nFor example, `-9 // 2` gives -5. The remainder `-9 % 2` is 1. The calculation `-5 * 2 + 1` gives -9.\n\nA nonzero remainder has the same sign as the divisor. The divmod function gives the quotient and remainder together. Other languages can use different integer-division rules.\n\n## Exact counts\nFor a nonnegative count n and positive page size, `(n + size - 1) // size` gives the page count. Twenty-one items occupy three pages at ten items per page.\n\nThe calculation `int(a / b)` first uses a float. Large integers can lose precision during that calculation. Its treatment of negative results also differs from floor division. A zero divisor raises ZeroDivisionError.",
+      "examples": [
+        {
+          "title": "Floor is not truncation",
+          "code": "print(7 / 2)\nprint(7 // 2)\nprint(-7 // 2)\nprint(int(-7 / 2))\nprint(7 // -2)\nprint(7.0 // 2)",
+          "output": "3.5\n3\n-4\n-3\n-4\n3.0",
+          "explanation": "A negative quotient moves toward negative infinity under floor division. Integer conversion moves toward zero.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What is -9 // 2?",
+          "options": [
+            "-4",
+            "-5",
+            "4"
+          ],
+          "answer": 1,
+          "explanation": "The exact quotient is -4.5. Its floor is -5."
+        },
+        {
+          "prompt": "What is -9 % 2?",
+          "options": [
+            "-1",
+            "1",
+            "0"
+          ],
+          "answer": 1,
+          "explanation": "The calculation -5 times 2 plus 1 gives -9."
+        },
+        {
+          "prompt": "Why avoid int(a / b) for exact large-integer division?",
+          "options": [
+            "It uses an inexact float and truncates toward zero",
+            "It always returns a string",
+            "Python has no large integers"
+          ],
+          "answer": 0,
+          "explanation": "The intermediate float can lose precision. Integer conversion also truncates toward zero."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations",
+      "confirmed": true
+    },
+    {
+      "id": 5,
+      "title": "Shallow and deep copying",
+      "subtitle": "A shallow copy makes a new outer container. A deep copy also copies nested mutable data.",
+      "body": "## Assignment and shallow copies\nThe assignment `other = original` gives one object a different name. The two names refer to the same object.\n\nThe call original.copy() makes a different outer list. Its elements refer to the initial child objects. This is a shallow copy.\n\nAn append to the outer copy does not change the initial outer list. A change to a shared child list is visible through the two containers.\n\n## Deep copies\nThe copy.deepcopy function copies many nested mutable objects. It keeps a memo of objects that it already copied. This memo supports cycles and keeps repeated references.\n\nIf two source positions refer to one child, the copied positions usually refer to one new child. The copied positions can refer to one copied child.\n\nImmutable values can stay shared. Functions and classes do not become separate copies of their definitions. Files and sockets usually have no useful automatic deep copy.\n\n## Repeated rows\nThe expression `[[0] * 3] * 2` repeats references to one row. A change to one apparent row changes both.\n\nThe expression `[[0] * 3 for _ in range(2)]` makes separate rows.\n\nA suitable copy separates the data that must change independently. A change to nested data in the copy can show whether the initial stays unchanged.",
+      "examples": [
+        {
+          "title": "Three different relationships",
+          "code": "from copy import deepcopy\noriginal = [[1, 2]]\nalias = original\nshallow = original.copy()\ndeep = deepcopy(original)\nshallow[0].append(3)\nprint(original)\nprint(deep)\nprint(alias is original, shallow is original)\nprint(shallow[0] is original[0])",
+          "output": "[[1, 2, 3]]\n[[1, 2]]\nTrue False\nTrue",
+          "explanation": "The shallow copy has a new outer list. Its child list stays shared with the original.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does list.copy() duplicate?",
+          "options": [
+            "All descendants",
+            "The outer list",
+            "Only its variable name"
+          ],
+          "answer": 1,
+          "explanation": "A shallow copy makes a new outer list. It does not copy each child object."
+        },
+        {
+          "prompt": "Why can [[0]] * 3 surprise you?",
+          "options": [
+            "It makes one shared inner list",
+            "It makes a tuple",
+            "It uses random values"
+          ],
+          "answer": 0,
+          "explanation": "Sequence multiplication repeats references to one child list."
+        },
+        {
+          "prompt": "Can deepcopy always make an independent copy of a socket?",
+          "options": [
+            "Yes",
+            "No. external resources need an explicit policy",
+            "Only on Windows"
+          ],
+          "answer": 1,
+          "explanation": "A file or socket generally has no meaningful automatic deep copy."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/library/copy.html",
+      "confirmed": true
+    },
+    {
+      "id": 6,
+      "title": "Hashability",
+      "subtitle": "Hashable objects have stable hashes that agree with equality.",
+      "body": "## Hashable keys\nDictionary keys and set members must be hashable. A hashable object has a stable hash. Equal hashable objects must have equal hashes.\n\nUnequal objects can have the same hash. The container uses equality to distinguish those objects during a lookup.\n\nLists, dictionaries, and sets are unhashable. A tuple is hashable only when each element is hashable. A tuple that contains an empty list is unhashable.\n\n## Key structure\nA tuple can describe an ordered combination, such as country and postcode. A frozenset can describe a collection where order and repeated values do not matter.\n\nA conversion from a list to a tuple changes only the outer sequence. Nested lists stay unhashable. The key uses one consistent rule for case and whitespace when these differences do not identify different records.\n\n## Custom objects\nAn ordinary class can inherit equality and hashing based on identity. Its attributes can change without a change to identity.\n\nA class with value equality must have a compatible `__hash__` method before its instances can be keys. A change to hash fields after insertion can cause a failed lookup.\n\nBuilt-in hashes are not unique permanent record identifiers. String hashes can differ between processes. Exact comparisons use full values. A specified deterministic digest gives reproducible disk routing.",
+      "examples": [
+        {
+          "title": "Ask Python which compound keys are valid",
+          "code": "values = [(1, 2), (1, [2]), frozenset({1, 2}), [1, 2]]\nfor value in values:\n    try:\n        hash(value)\n        print(type(value).__name__, \"hashable\")\n    except TypeError:\n        print(type(value).__name__, \"unhashable\")",
+          "output": "tuple hashable\ntuple unhashable\nfrozenset hashable\nlist unhashable",
+          "explanation": "The tuple can have a hash only if each element can have a hash. A list element prevents this.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Is a tuple containing a list hashable?",
+          "options": [
+            "Yes, all tuples are",
+            "No, its list element is unhashable",
+            "Only if the list is empty"
+          ],
+          "answer": 1,
+          "explanation": "Each tuple element must support a hash. A list does not."
+        },
+        {
+          "prompt": "Must unequal objects have different hashes?",
+          "options": [
+            "Yes",
+            "No, collisions are allowed",
+            "Only dictionary keys"
+          ],
+          "answer": 1,
+          "explanation": "Different keys can have the same hash. Equality distinguishes those keys."
+        },
+        {
+          "prompt": "Does hash(text) give a permanent identifier across processes?",
+          "options": [
+            "Yes",
+            "No, it can vary across processes",
+            "Only for lowercase strings"
+          ],
+          "answer": 1,
+          "explanation": "Python can use different string hashes in different processes."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/glossary.html#term-hashable",
+      "confirmed": true
+    },
+    {
+      "id": 7,
+      "title": "Positional and keyword arguments",
+      "subtitle": "The function signature controls how Python assigns arguments to parameters.",
+      "body": "## Parameter rules\nPython assigns arguments to parameters before it starts the function body. The caller must supply a value for each required parameter. One parameter cannot receive two values.\n\nParameters before / are positional-only. Parameters after * or `*args` are keyword-only. A default makes a parameter optional. It does not make the parameter keyword-only.\n\nAn option such as overwrite=False states its purpose more clearly than an unexplained positional Boolean.\n\n## Argument collection and expansion\nIn a definition, `*args` collects extra positional arguments into a tuple. The `**kwargs` parameter collects extra keyword arguments into a dictionary.\n\nAt a call, `*values` expands an iterable into positional arguments. The `**options` form expands a mapping with string keys into keyword arguments.\n\nA repeated keyword causes TypeError. A function that passes unknown keywords through many calls can cause an input error far from its source.\n\n## Shared objects\nA parameter refers to the supplied object. An append to a list parameter changes the caller's list. A reassignment of the local parameter does not change the caller's variable.\n\nAn absent argument can have a different meaning from None or an empty collection. The lifetime rules in Chapter 1 also apply to mutable defaults.\n\nType annotations describe expected types. They do not enforce runtime types without other validation code.",
+      "examples": [
+        {
+          "title": "A signature with explicit boundaries",
+          "code": "def describe(name, /, prefix=\"Hello\", *, punctuation=\"!\"):\n    return f\"{prefix}, {name}{punctuation}\"\n\nprint(describe(\"Ada\"))\nprint(describe(\"Ada\", \"Welcome\", punctuation=\".\"))\ntry:\n    describe(name=\"Ada\")\nexcept TypeError:\n    print(\"name must be positional\")",
+          "output": "Hello, Ada!\nWelcome, Ada.\nname must be positional",
+          "explanation": "The call expands the list and mapping. The function collects the positional values in a tuple.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does *args receive in a definition?",
+          "options": [
+            "A list",
+            "A tuple of extra positional arguments",
+            "A dictionary"
+          ],
+          "answer": 1,
+          "explanation": "The *args parameter collects extra positional arguments in a tuple."
+        },
+        {
+          "prompt": "What makes an argument keyword-only?",
+          "options": [
+            "It follows * or *args in the signature",
+            "Its name is long",
+            "It has a default"
+          ],
+          "answer": 0,
+          "explanation": "The signature places keyword-only parameters after * or *args."
+        },
+        {
+          "prompt": "Do annotations enforce runtime types by themselves?",
+          "options": [
+            "Yes",
+            "No",
+            "Only for integers"
+          ],
+          "answer": 1,
+          "explanation": "Annotations describe types. Other code must validate runtime values when necessary."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/tutorial/controlflow.html#special-parameters",
+      "confirmed": true
+    },
+    {
+      "id": 8,
+      "title": "Generators and lazy evaluation",
+      "subtitle": "A generator supplies values when the caller requests them.",
+      "body": "## A function that can pause\nA call to a function that contains yield makes a generator object. The body starts when iteration first requests a value.\n\nAt yield, the function supplies one value and pauses. It keeps its local state. The next request continues after yield. A return or the end of the body finishes iteration.\n\nThe caller controls this sequence. The generator does not do parallel work.\n\n## Lazy evaluation\nA generator can avoid work on unused input. A request for four results can leave other source values unused.\n\nThe list and sorted functions collect their inputs. Thus, sorted(generator) collects the complete input. Caches and readers that fall behind under itertools.tee can also keep values in memory.\n\nA generator is a one-pass iterator. After exhaustion, a different loop receives no values. A new generator or a saved collection permits a different pass.\n\n## Completion and resources\nThe return statement ends a generator. An explicit StopIteration in its body usually becomes RuntimeError.\n\nThe yield from statement delegates iteration and other generator operations to a different generator. That generator's return value is not a different yielded element.\n\nA paused generator can keep a file open. The resource must stay available until consumption finishes. If consumption stops before the end, an explicit close operation can be necessary. Tests with partial consumption can find cleanup failures that a complete list conversion does not show.",
+      "examples": [
+        {
+          "title": "Observe when the body runs",
+          "code": "def numbers():\n    print(\"starting\")\n    yield 1\n    print(\"resuming\")\n    yield 2\n\ng = numbers()\nprint(\"created\")\nprint(next(g))\nprint(next(g))\nprint(list(g))",
+          "output": "created\nstarting\n1\nresuming\n2\n[]",
+          "explanation": "The function call makes the generator. The first next call starts its body. The second next call continues after yield.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "When does a generator function's body start?",
+          "options": [
+            "At definition time",
+            "When iteration first advances it",
+            "Always at the call itself"
+          ],
+          "answer": 1,
+          "explanation": "The first iteration request starts the generator body."
+        },
+        {
+          "prompt": "Does sorted(generator) stay streaming?",
+          "options": [
+            "Yes, always constant-memory",
+            "No, sorting materializes its inputs",
+            "Only if the generator uses yield from"
+          ],
+          "answer": 1,
+          "explanation": "The sorted function collects the input before it supplies the sorted list."
+        },
+        {
+          "prompt": "How should a generator end usually?",
+          "options": [
+            "return or reach the end",
+            "raise RuntimeError",
+            "yield StopIteration"
+          ],
+          "answer": 0,
+          "explanation": "A return or the end of the generator body causes usual exhaustion."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/reference/expressions.html#generator-iterator-methods",
+      "confirmed": true
+    },
+    {
+      "id": 9,
+      "title": "Closures and late binding",
+      "subtitle": "A closure keeps access to an enclosing variable and reads its current value.",
+      "body": "## Enclosing variables\nA nested function can use a variable from its enclosing function after the outer call finishes. The function and its environment form a closure.\n\nThe closure usually reads the current value of the variable when the closure runs. It does not automatically keep a fixed value from its definition.\n\n## Callbacks in a loop\nA loop changes one variable i. Each iteration does not make a new function scope. Thus, callbacks that read i after the loop see its final value.\n\nThis behavior applies to def and lambda functions. A module variable can cause the same delayed-lookup error outside a closure.\n\n## Separate captured values\nThe expression `lambda i=i: i` keeps the current object as a default argument. A separate factory call for each callback makes a separate enclosing variable.\n\nThe functools.partial function can also assign arguments in advance. These methods keep object references. They do not make mutable data immutable.\n\nA change to a captured list stays visible to the callback. An applicable copy can give a snapshot with no shared mutable data.\n\n## Name lookup\nThe nonlocal statement permits reassignment of an existing enclosing variable. This declaration is not necessary for a read or a change to a referenced list.\n\nOrdinary name lookup searches local, enclosing, module-global, and built-in scopes. Assignment usually makes a name local throughout a function. A read before that local assignment raises UnboundLocalError.",
+      "examples": [
+        {
+          "title": "The loop captures one changing binding",
+          "code": "def build():\n    callbacks = []\n    for i in range(3):\n        callbacks.append(lambda: i)\n    return callbacks\n\nprint([f() for f in build()])\nfixed = [lambda i=i: i for i in range(3)]\nprint([f() for f in fixed])",
+          "output": "[2, 2, 2]\n[0, 1, 2]",
+          "explanation": "The first callbacks share one variable i. Each corrected callback has its own default value.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Is late binding specific to lambdas?",
+          "options": [
+            "Yes",
+            "No, nested def functions can show it too",
+            "Only in classes"
+          ],
+          "answer": 1,
+          "explanation": "The two lambda and def functions can read the same changing variable."
+        },
+        {
+          "prompt": "What does lambda i=i: i capture?",
+          "options": [
+            "A copied object graph",
+            "The current object as a default value",
+            "A fresh global namespace"
+          ],
+          "answer": 1,
+          "explanation": "The default keeps the current object reference. It does not copy the object graph."
+        },
+        {
+          "prompt": "What gives each callback its own enclosing binding?",
+          "options": [
+            "Calling a factory once per callback",
+            "Renaming the loop variable",
+            "Using a longer variable name"
+          ],
+          "answer": 0,
+          "explanation": "Each factory call makes a different enclosing environment."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/faq/programming.html#why-do-lambdas-defined-in-a-loop-with-different-values-all-return-the-same-result",
+      "confirmed": true
+    },
+    {
+      "id": 10,
+      "title": "Decorators and functools.wraps",
+      "subtitle": "A decorator replaces a function with a different callable object.",
+      "body": "## Definition and call time\nThe decorator syntax @decorate is approximately equivalent to function = decorate(function).\n\nPython first makes the initial function. It passes that function to the decorator. The name then refers to the object that the decorator returns.\n\nDecoration occurs when the definition runs. A returned wrapper runs later, when a caller calls the decorated function.\n\n## Results and metadata\nA wrapper commonly accepts `*args` and `**kwargs`. It calls the initial function and returns the result. Without a return statement, the caller receives None.\n\nThe functools.wraps decorator keeps useful metadata and supplies `__wrapped__` for inspection. It does not enforce types or add thread safety.\n\nAn async wrapper usually awaits its initial async function. A generator wrapper must keep lazy behavior if callers use it. A try/finally statement contains necessary cleanup.\n\n## Decorator order\nWith @outer above @inner, Python makes outer(inner(function)). At call time, the outer wrapper starts first.\n\nA cache outside an authorization check can prevent that check on a cache hit. The order must agree with the operations that must occur on each call.\n\nA configured decorator such as repeat(3) adds a factory call. The factory receives configuration and returns a decorator. That decorator receives the function and returns the wrapper.",
+      "examples": [
+        {
+          "title": "Wrap without losing the result or name",
+          "code": "from functools import wraps\n\ndef announce(fn):\n    @wraps(fn)\n    def wrapper(*args, **kwargs):\n        print(\"calling\", fn.__name__)\n        return fn(*args, **kwargs)\n    return wrapper\n\n@announce\ndef add(a, b):\n    return a + b\n\nprint(add(2, 3))\nprint(add.__name__)",
+          "output": "calling add\n5\nadd",
+          "explanation": "The wrapper returns the initial result. The wraps decorator keeps the initial function name.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does Python build with @a above @b?",
+          "options": [
+            "b(a(f))",
+            "a(b(f))",
+            "a and b run in parallel"
+          ],
+          "answer": 1,
+          "explanation": "The nearest decorator receives the initial function first. The result then passes to the outer decorator."
+        },
+        {
+          "prompt": "What does wraps mainly keep?",
+          "options": [
+            "Metadata and an introspection link",
+            "Runtime type safety",
+            "Thread safety"
+          ],
+          "answer": 0,
+          "explanation": "The wraps decorator copies useful metadata and supplies __wrapped__."
+        },
+        {
+          "prompt": "What happens if a wrapper omits return?",
+          "options": [
+            "The initial result is returned automatically",
+            "The caller receives None",
+            "The wrapper cannot execute"
+          ],
+          "answer": 1,
+          "explanation": "Without an explicit return, a function returns None."
+        }
+      ],
+      "part": "I",
+      "partTitle": "Python's object and execution model",
+      "source": "https://docs.python.org/3/library/functools.html#functools.wraps",
+      "confirmed": true
+    },
+    {
+      "id": 11,
+      "title": "Class versus instance attributes",
+      "subtitle": "A class attribute can be shared. An instance attribute belongs to one instance.",
+      "body": "## Attribute lookup\nFor a plain attribute, an instance searches its own attributes and then its class hierarchy. Multiple instances can refer to one class attribute without copies.\n\nDescriptors, such as properties, add other lookup rules. The simple rule here applies to plain attributes.\n\n## One shared list\nThe definition `class Team: members = []` makes one class list. An instance without its own members attribute finds that shared list.\n\nThe append method changes the list. It does not make an attribute in the instance dictionary. Thus, a different instance can see the new element.\n\nAn assignment `self.members = []` in `__init__` makes a separate list for each instance. A shared registry or immutable configuration value can instead belong to the class.\n\n## Assignment and change\nFor a plain attribute, `team.kind = \"research\"` makes an instance attribute. This attribute takes priority over the class value for that instance.\n\nOther instances find the class value. Deletion of the instance attribute makes the class value visible again.\n\nThe += operation on an inherited list can change the shared object before assignment to the instance. Subclasses can also share inherited mutable class data.\n\nA constructor that receives a list must have a clear copy policy. It can keep the caller's list or make an applicable copy.",
+      "examples": [
+        {
+          "title": "A class list is shared",
+          "code": "class Team:\n    members = []\n\na = Team()\nb = Team()\na.members.append(\"Ada\")\nprint(b.members)\nprint(a.members is b.members)\nprint(\"members\" in a.__dict__)",
+          "output": "['Ada']\nTrue\nFalse",
+          "explanation": "The lookup finds the class list. The append method changes that list without an assignment to the instance.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Where should an independent mutable list usually be made?",
+          "options": [
+            "In the class body",
+            "In __init__ for each instance",
+            "In a global variable"
+          ],
+          "answer": 1,
+          "explanation": "The initializer can make a different list for each instance."
+        },
+        {
+          "prompt": "Does a.items.append(x) make a.items in a.__dict__?",
+          "options": [
+            "Always",
+            "No, it can mutate an inherited list",
+            "Only for strings"
+          ],
+          "answer": 1,
+          "explanation": "The method changes the object that lookup finds. It does not assign an instance attribute."
+        },
+        {
+          "prompt": "What does a.kind = \"x\" usually do for a plain class attribute?",
+          "options": [
+            "Changes each instance",
+            "Makes an instance shadow",
+            "Deletes the class attribute"
+          ],
+          "answer": 1,
+          "explanation": "For a plain attribute, the new instance value takes priority over the class value."
+        }
+      ],
+      "part": "II",
+      "partTitle": "Classes and Python internals",
+      "source": "https://docs.python.org/3/tutorial/classes.html#class-and-instance-variables",
+      "confirmed": true
+    },
+    {
+      "id": 12,
+      "title": "Equality and hashing contracts",
+      "subtitle": "Equal hashable objects must have equal hashes.",
+      "body": "## Value equality\nThe class definition must state which fields determine equality. A coordinate can compare x and y. A database entity can compare a stable identifier.\n\nThe `__eq__` method returns NotImplemented when it does not support the other type. Python can then try the other operand. NotImplementedError does not request this fallback.\n\n## Compatible hashes\nFor hashable values, if a == b, then hash(a) == hash(b). The reverse condition can be false. Unequal values can have the same hash.\n\nThe hash must use the same stable fields as equality. An extra hash field that equality ignores can give equal objects different hashes.\n\nA class that defines `__eq__` without a compatible `__hash__` usually becomes unhashable. This prevents identity hashing from disagreeing with value equality.\n\n## Stable keys\nA change to a key's hash after insertion can cause lookup to search a different location. A change to equality fields is also unsafe.\n\nImmutable value objects avoid this failure when their fields are stable. A comparison policy must also state whether subclasses can compare equal to the base type.\n\nGenerated dataclass equality compares values only for the same concrete class. A useful test inserts one instance as a dictionary key. A separate equal instance must retrieve the same value. The test does not specify a numeric hash value.",
+      "examples": [
+        {
+          "title": "An immutable value key",
+          "code": "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Point:\n    x: int\n    y: int\n\na = Point(2, 3)\nb = Point(2, 3)\nprint(a == b, a is b)\nprint(hash(a) == hash(b))\nprint({a: \"home\"}[b])",
+          "output": "True False\nTrue\nhome",
+          "explanation": "The frozen dataclass generates compatible equality and hashing for these fields. A separate equal instance can retrieve the dictionary value.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Which rule must equal hashable objects obey?",
+          "options": [
+            "Equal hashes imply equal objects",
+            "Equal hashable objects imply equal hashes",
+            "Unequal objects require unequal hashes"
+          ],
+          "answer": 1,
+          "explanation": "Equal hashable keys must have equal hashes. Hash collisions stay permitted for unequal keys."
+        },
+        {
+          "prompt": "What should unsupported __eq__ return?",
+          "options": [
+            "NotImplemented",
+            "NotImplementedError",
+            "A random Boolean"
+          ],
+          "answer": 0,
+          "explanation": "NotImplemented lets Python try a different comparison implementation."
+        },
+        {
+          "prompt": "What is the usual result of defining __eq__ without __hash__?",
+          "options": [
+            "The class becomes unhashable",
+            "The hash always becomes zero",
+            "Equality stops working"
+          ],
+          "answer": 0,
+          "explanation": "Python disables the inherited identity hash after a class defines value equality without a compatible hash."
+        }
+      ],
+      "part": "II",
+      "partTitle": "Classes and Python internals",
+      "source": "https://docs.python.org/3/reference/datamodel.html#object.__hash__",
+      "confirmed": true
+    },
+    {
+      "id": 13,
+      "title": "Multiple inheritance and MRO",
+      "subtitle": "The method resolution order determines the next method that super calls.",
+      "body": "## One lookup sequence\nPython uses C3 linearization for multiple inheritance. The result is the method resolution order, or MRO. `Class.__mro__` and Class.mro() show this sequence.\n\nThe MRO keeps local base order and established ancestor order. A shared ancestor occurs once in a diamond. Inconsistent order requirements cause TypeError during class creation.\n\n## The next implementation\nIn a method, super uses the defining class and the actual instance. It searches after that class in the instance's MRO.\n\nA diamond can have the sequence D, B, C, A, object. On a D instance, a super call in B then continues to C. It does not always select B's directly declared parent.\n\nIf each method calls super once, the chain can visit each implementation once. Direct calls to named base methods can skip implementations or repeat a shared ancestor.\n\n## Compatible arguments\nA constructor can consume its own keyword arguments. It passes the remaining arguments to super. The final call to `object.__init__` must have no unsupported arguments.\n\nA method without a super call ends the chain. This must agree with the behavior of the other bases.\n\nThe MRO is useful evidence for unexpected dispatch. A different base order can change behavior. Separate helper objects can be simpler for independent responsibilities.",
+      "examples": [
+        {
+          "title": "Trace a diamond cooperatively",
+          "code": "class A:\n    def speak(self):\n        print(\"A\")\nclass B(A):\n    def speak(self):\n        print(\"B\")\n        super().speak()\nclass C(A):\n    def speak(self):\n        print(\"C\")\n        super().speak()\nclass D(B, C):\n    pass\n\nprint([c.__name__ for c in D.__mro__])\nD().speak()",
+          "output": "['D', 'B', 'C', 'A', 'object']\nB\nC\nA",
+          "explanation": "The super call in B continues to C for this D instance. The next super call continues to A.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does super() select in a cooperative method?",
+          "options": [
+            "Always the first declared parent",
+            "The next implementation in the instance's MRO",
+            "Each ancestor simultaneously"
+          ],
+          "answer": 1,
+          "explanation": "The actual instance MRO determines the next method."
+        },
+        {
+          "prompt": "How often does a shared ancestor appear in the MRO?",
+          "options": [
+            "Once",
+            "Once per inheritance path",
+            "Never"
+          ],
+          "answer": 0,
+          "explanation": "The linearized order contains each ancestor once."
+        },
+        {
+          "prompt": "What happens when Python cannot form a consistent MRO?",
+          "options": [
+            "Python picks a random base",
+            "Class creation raises TypeError",
+            "super returns None"
+          ],
+          "answer": 1,
+          "explanation": "Python rejects class definitions with inconsistent order requirements."
+        }
+      ],
+      "part": "II",
+      "partTitle": "Classes and Python internals",
+      "source": "https://docs.python.org/3/tutorial/classes.html#multiple-inheritance",
+      "confirmed": true
+    },
+    {
+      "id": 14,
+      "title": "The iteration protocol",
+      "subtitle": "A for loop requests values from an iterator until the iterator reports exhaustion.",
+      "body": "## Iterable and iterator\nAn iterable can supply an iterator. An iterator keeps a current position. The next operation requests a different value. StopIteration reports exhaustion.\n\nA list can supply several independent iterators. For an iterator it, iter(it) gives the same iterator.\n\nA for loop gets an iterator from its source. It requests values until exhaustion. This protocol supports lists, files, generators, and custom sources.\n\n## Consumption\nThe sum and list functions consume iterator values. Loops and membership tests can also consume values.\n\nAfter sum(g), list(g) receives only the remaining values. An exhausted generator gives an empty list. A new iterator or an applicable saved collection permits a second pass.\n\nThe form next(it, default) supplies a value for exhaustion. Other errors during value production stay failures.\n\n## Custom behavior and tools\nAn iterator implements `__iter__` with self as the result. Its `__next__` method advances its state. After exhaustion, the iterator must stay exhausted.\n\nA reusable collection instead supplies a new iterator. The zip function stops at the shortest input by default. Its strict=True option checks length agreement.\n\nThe tee function supplies multiple readers but keeps a buffer when one reader falls behind. The source must stay available for lazy consumption. A file iterator cannot read data after its file closes.",
+      "examples": [
+        {
+          "title": "An iterator remembers its position",
+          "code": "values = [10, 20, 30]\nit = iter(values)\nprint(next(it))\nprint(list(it))\nprint(list(it))\nprint(list(values))\nprint(next(it, \"finished\"))",
+          "output": "10\n[20, 30]\n[]\n[10, 20, 30]\nfinished",
+          "explanation": "The iterator advances through the source list. This does not remove elements from the source list.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does iter(it) return for an iterator it?",
+          "options": [
+            "A deep copy",
+            "The same iterator",
+            "A new list"
+          ],
+          "answer": 1,
+          "explanation": "The iterator __iter__ method returns self."
+        },
+        {
+          "prompt": "Why can sum(g); list(g) produce an empty list?",
+          "options": [
+            "sum deletes the source",
+            "sum consumes g",
+            "list cannot accept generators"
+          ],
+          "answer": 1,
+          "explanation": "The sum operation consumes the iterator. No values stay after exhaustion."
+        },
+        {
+          "prompt": "What does zip stop at by default?",
+          "options": [
+            "The longest input",
+            "The shortest input",
+            "Only an explicit sentinel"
+          ],
+          "answer": 1,
+          "explanation": "The default zip behavior stops when the shortest input finishes."
+        }
+      ],
+      "part": "II",
+      "partTitle": "Classes and Python internals",
+      "source": "https://docs.python.org/3/library/stdtypes.html#iterator-types",
+      "confirmed": true
+    },
+    {
+      "id": 15,
+      "title": "Subclass registration",
+      "subtitle": "The __init_subclass__ hook runs when Python makes a subclass.",
+      "body": "## Class creation\nA base class can define `__init_subclass__` to inspect or configure each new subclass. The cls parameter refers to the new subclass.\n\nThe hook runs when the class statement makes the subclass. It does not run for each new instance. The hook already has its special class-method behavior without an explicit classmethod decorator.\n\n## A class registry\nA subclass definition can supply a keyword such as format_name=\"json\". The hook can check this name and keep the class in a registry.\n\nLater, application code selects the class and makes an instance. The registry must use stable names and state a rule for duplicate names.\n\nA duplicate error prevents import order from silently replacing an implementation. A registry dictionary on the base stays shared unless a different class makes a separate dictionary.\n\n## Cooperation and discovery\nThe hook consumes the class keywords that it owns. It passes the remaining keywords through super().`__init_subclass__`. Other bases can use these keywords.\n\nUnsupported keywords that reach object cause an error. Registration occurs only after the intended class definitions execute. A registry does not discover modules before import.\n\nClass creation is a suitable time for small checks and registration. Network requests and resource acquisition belong to explicit runtime operations. An ordinary registration function is an alternative when class-creation effects become difficult to follow.",
+      "examples": [
+        {
+          "title": "Register subclasses by a declared key",
+          "code": "class Formatter:\n    registry = {}\n    def __init_subclass__(cls, *, format_name=None, **kwargs):\n        super().__init_subclass__(**kwargs)\n        if format_name is not None:\n            if format_name in Formatter.registry:\n                raise ValueError(\"duplicate format\")\n            Formatter.registry[format_name] = cls\n\nclass Upper(Formatter, format_name=\"upper\"):\n    def render(self, text):\n        return text.upper()\n\nchosen = Formatter.registry[\"upper\"]()\nprint(chosen.render(\"hello\"))",
+          "output": "HELLO",
+          "explanation": "The class definition registers Upper. Application code makes the selected instance in a separate operation.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "When does __init_subclass__ run?",
+          "options": [
+            "On each instance creation",
+            "When a subclass is made",
+            "Only when the base is deleted"
+          ],
+          "answer": 1,
+          "explanation": "The hook runs during subclass creation, not instance creation."
+        },
+        {
+          "prompt": "Does a registry automatically discover unimported modules?",
+          "options": [
+            "Yes",
+            "No",
+            "Only with a dictionary"
+          ],
+          "answer": 1,
+          "explanation": "The implementation modules must execute their class definitions first."
+        },
+        {
+          "prompt": "Why forward remaining class keywords with super?",
+          "options": [
+            "To participate in other bases' hooks",
+            "To make each instance twice",
+            "To disable MRO"
+          ],
+          "answer": 0,
+          "explanation": "Each base consumes its own options and passes other options to the next hook."
+        }
+      ],
+      "part": "II",
+      "partTitle": "Classes and Python internals",
+      "source": "https://docs.python.org/3/reference/datamodel.html#object.__init_subclass__",
+      "confirmed": true
+    },
+    {
+      "id": 16,
+      "title": "Dataclasses and default factories",
+      "subtitle": "A dataclass can make common methods and a separate mutable default for each instance.",
+      "body": "## Generated methods\nThe dataclass decorator reads annotated fields. It can generate `__init__`, `__repr__`, and `__eq__`. The result stays an ordinary class.\n\nAnnotations do not validate runtime types automatically. The generated initializer calls `__post_init__` if that method exists. This method can check relationships between fields.\n\nThe initializer does not automatically call an ordinary non-dataclass base initializer.\n\n## Default factories\nThe declaration field(default_factory=list) makes a separate default list for each instance. The factory must be the callable list, not the result of list().\n\nThe initializer calls the factory when the caller does not supply the field. If the caller supplies a list, the instance usually keeps that reference. The factory does not copy explicit arguments.\n\n## Frozen instances\nThe option frozen=True prevents ordinary field reassignment. It does not make contained objects immutable. A list in a frozen instance can change.\n\nGenerated equality compares fields only for the same concrete class. It compares the participating fields. The compare=False option excludes a field.\n\nA mutable dataclass with value equality is usually unhashable. A frozen dataclass can receive a generated hash if its fields support hashes. The unsafe_hash option does not make mutable key data safe.\n\nThe dataclasses.replace function makes a different instance. It does not deep-copy unchanged fields. Mutable nested values can stay shared.",
+      "examples": [
+        {
+          "title": "Each instance gets its own default list",
+          "code": "from dataclasses import dataclass, field\n\n@dataclass\nclass Notebook:\n    title: str\n    pages: list[str] = field(default_factory=list)\n\na = Notebook(\"A\")\nb = Notebook(\"B\")\na.pages.append(\"objects\")\nprint(a.pages, b.pages)\nprint(a.pages is b.pages)",
+          "output": "['objects'] []\nFalse",
+          "explanation": "The initializer calls list separately for each absent pages argument. The two instances have different default lists.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Which field declaration makes an independent list default?",
+          "options": [
+            "field(default_factory=list)",
+            "field(default_factory=list())",
+            "pages = []"
+          ],
+          "answer": 0,
+          "explanation": "The factory must be a zero-argument callable."
+        },
+        {
+          "prompt": "Does frozen=True freeze an inner list?",
+          "options": [
+            "Yes",
+            "No",
+            "Only if the list has strings"
+          ],
+          "answer": 1,
+          "explanation": "The field reference cannot change through ordinary assignment. The contained list can change."
+        },
+        {
+          "prompt": "Do dataclass annotations validate input at runtime?",
+          "options": [
+            "Automatically",
+            "No",
+            "Only with default_factory"
+          ],
+          "answer": 1,
+          "explanation": "Annotations alone do not validate runtime values."
+        }
+      ],
+      "part": "II",
+      "partTitle": "Classes and Python internals",
+      "source": "https://docs.python.org/3/library/dataclasses.html",
+      "confirmed": true
+    },
+    {
+      "id": 17,
+      "title": "Caching instance methods",
+      "subtitle": "A method cache includes self in its keys and can keep an instance alive.",
+      "body": "## Method cache keys\nThe lru_cache decorator makes a wrapper on the class. A bound method call supplies self as an argument. Thus, self is part of the cache key and must be hashable.\n\nThe wrapper shares one cache capacity across instances. It does not make a private cache for each instance. Different instances usually use different keys unless their equality makes them equivalent.\n\n## Retained references\nThe cache keeps arguments and results until eviction or a cache-clear operation. A reference to self can keep an instance alive after other references disappear.\n\nThe maxsize parameter limits entries, not bytes. One entry can keep a large object graph alive. With maxsize=None, the entry count has no limit.\n\n## Old results\nA method can read mutable instance fields. If those fields change but the key stays equal, the cache can return an old result.\n\nStable inputs, an immutable version value, or explicit invalidation can prevent this error. A changed object hash is not a safe way to force a different calculation.\n\nA cached_property keeps one value on the instance. Deletion of that attribute permits a new calculation. It does not cache parameterized calls.\n\nThe lru_cache structure stays coherent across threads. However, concurrent misses can calculate the same result twice. The cache does not guarantee one execution of a side effect.",
+      "examples": [
+        {
+          "title": "self divides the cache key space",
+          "code": "from functools import lru_cache\n\nclass Scale:\n    def __init__(self, factor):\n        self.factor = factor\n    @lru_cache(maxsize=4)\n    def apply(self, value):\n        print(\"computing\")\n        return self.factor * value\n\na, b = Scale(2), Scale(3)\nprint(a.apply(5))\nprint(a.apply(5))\nprint(b.apply(5))\nprint(Scale.apply.cache_info().hits)\nScale.apply.cache_clear()",
+          "output": "computing\n10\n10\ncomputing\n15\n1",
+          "explanation": "The instances a and b use separate keys. Only the second call on a is a cache hit.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Does self participate in an lru_cache method key?",
+          "options": [
+            "Yes",
+            "No",
+            "Only with maxsize=None"
+          ],
+          "answer": 0,
+          "explanation": "A bound method call includes self among the wrapper arguments."
+        },
+        {
+          "prompt": "Does maxsize limit the number of bytes that a cache keeps?",
+          "options": [
+            "Yes exactly",
+            "No, it limits entries",
+            "Only for methods"
+          ],
+          "answer": 1,
+          "explanation": "An entry can keep references to a large object graph."
+        },
+        {
+          "prompt": "Can two threads compute the same missing key?",
+          "options": [
+            "Yes",
+            "Never",
+            "Only if caching is disabled"
+          ],
+          "answer": 0,
+          "explanation": "The cache keeps coherent internal state but can repeat a calculation after concurrent misses."
+        }
+      ],
+      "part": "II",
+      "partTitle": "Classes and Python internals",
+      "source": "https://docs.python.org/3/library/functools.html#functools.lru_cache",
+      "confirmed": true
+    },
+    {
+      "id": 18,
+      "title": "Lists versus sets",
+      "subtitle": "A list keeps order and repeated values. A set represents different members.",
+      "body": "## Different data requirements\nA list keeps sequence order, repeated values, and indexed positions. A set keeps different hashable members. A conversion to a set can remove information that the application uses.\n\nList membership can compare values one at a time. It can do up to O(n) comparisons.\n\nSet lookup has expected O(1) cost for ordinary well-distributed keys. Severe hash collisions can increase this cost toward O(n). These estimates assume bounded costs for hashes and equality.\n\n## Construction cost\nSet construction takes expected O(n) time and uses more memory. A scan of a small list can cost less for one query.\n\nRepeated queries can use one set that the program makes in advance. A new set(values) for each query repeats the construction cost.\n\nBig-O describes growth. It does not give the faster structure for each input size or computer.\n\n## Equality and order\nThe values 1, True, and 1.0 compare equal and have equal hashes. They occupy one logical set entry. A key that includes type can distinguish them when necessary.\n\nA set does not promise insertion order. A membership set and an output list can keep first-seen order. For hashable values, list(dict.fromkeys(values)) is a different option.\n\nA persistent list and set that represent one collection must have consistent updates. A temporary set from a stable list can avoid this requirement.",
+      "examples": [
+        {
+          "title": "Order-preserving deduplication",
+          "code": "values = [\"b\", \"a\", \"b\", \"c\", \"a\"]\nunique = list(dict.fromkeys(values))\nprint(unique)\nprint(\"a\" in set(values))\nprint(len({1, True, 1.0}))",
+          "output": "['b', 'a', 'c']\nTrue\n1",
+          "explanation": "Dictionary keys keep first insertion order. The three numeric forms compare equal, so the set contains one member.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Is set membership guaranteed O(1) in each case?",
+          "options": [
+            "Yes",
+            "No, expected O(1) with possible collision degradation",
+            "No, always O(n²)"
+          ],
+          "answer": 1,
+          "explanation": "Severe collisions can increase lookup cost. Hash and equality calculations can also be expensive."
+        },
+        {
+          "prompt": "What can set(values) lose?",
+          "options": [
+            "Duplicates and sequence-order semantics",
+            "All hashability requirements",
+            "Each initial value"
+          ],
+          "answer": 0,
+          "explanation": "A set represents different membership. It does not keep sequence order or duplicates."
+        },
+        {
+          "prompt": "How should repeated lookups use an index?",
+          "options": [
+            "Build the same set for each lookup",
+            "Build it once and reuse it",
+            "Sort after each lookup"
+          ],
+          "answer": 1,
+          "explanation": "One construction lets later queries use the existing membership set."
+        }
+      ],
+      "part": "III",
+      "partTitle": "Algorithms and data structures",
+      "source": "https://docs.python.org/3/library/stdtypes.html#set-types-set-frozenset",
+      "confirmed": true
+    },
+    {
+      "id": 19,
+      "title": "Insertion complexity",
+      "subtitle": "An insertion at the front of a list moves the existing references.",
+      "body": "## Front insertion\nA CPython list contains a resizable array of object references. An insertion at position zero moves existing references to make space.\n\nThe program does not deep-copy the referenced objects. However, movement of n references takes O(n) work. An insertion in the middle moves the remaining part of the array.\n\nRepeated front insertion for n values moves approximately 0 + 1 + ... + n - 1 references. The total cost is O(n²).\n\n## Append cost\nAn append usually uses spare capacity. Sometimes the array must grow and move its references. A one append can therefore take O(n) work.\n\nAcross a sequence of n appends, total work is O(n). This gives amortized O(1) cost per append. It does not promise equal time for each operation.\n\n## Queues and construction order\nThe collections.deque type supports efficient additions and removals at the two ends. The append and popleft methods implement first-in, first-out processing.\n\nA deque does not give constant-time access to an arbitrary middle position.\n\nIf front insertion only makes a reversed sequence, appends followed by one reverse operation give the same result with linear total work.\n\nThe list itself holds references. Its elements can use more memory. A performance comparison must include the actual operations and the same output order.",
+      "examples": [
+        {
+          "title": "Use a deque for a FIFO queue",
+          "code": "from collections import deque\nqueue = deque([\"first\", \"second\"])\nqueue.append(\"third\")\nprint(queue.popleft())\nprint(list(queue))\nqueue.appendleft(\"urgent\")\nprint(list(queue))",
+          "output": "first\n['second', 'third']\n['urgent', 'second', 'third']",
+          "explanation": "The deque processes a first-in, first-out queue. Removal from its left end avoids repeated shifts of list references.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What is the usual cost of list.insert(0, x) for length n?",
+          "options": [
+            "O(1)",
+            "O(n)",
+            "O(log n)"
+          ],
+          "answer": 1,
+          "explanation": "The insertion moves the existing references to make space."
+        },
+        {
+          "prompt": "What does amortized O(1) mean for append?",
+          "options": [
+            "Each append is equally fast",
+            "Total work across many appends is linear",
+            "Append never reallocates"
+          ],
+          "answer": 1,
+          "explanation": "A sequence of n appends takes linear total work, despite some expensive individual appends."
+        },
+        {
+          "prompt": "Which structure fits repeated FIFO append/popleft?",
+          "options": [
+            "deque",
+            "tuple",
+            "set"
+          ],
+          "answer": 0,
+          "explanation": "A deque supports efficient append and popleft operations."
+        }
+      ],
+      "part": "III",
+      "partTitle": "Algorithms and data structures",
+      "source": "https://docs.python.org/3/library/collections.html#collections.deque",
+      "confirmed": true
+    },
+    {
+      "id": 20,
+      "title": "Sorting stability",
+      "subtitle": "A stable sort keeps the relative order of records with equal keys.",
+      "body": "## Equal-key records\nPython sorted and list.sort are stable. Students with equal grades keep their previous relative order after a sort by grade.\n\nPython uses an adaptive stable implementation commonly called Timsort. It can use existing ordered runs. Its usual worst-case comparison growth is O(n log n). Favorable input can take linear work.\n\nKey construction and comparisons also have costs.\n\n## New list or changed list\nThe sorted function makes a new list. The list.sort method changes the existing list and returns None. Other references to that list see the new order.\n\nA key function runs once for each item. Its results must permit the specified comparisons. Side effects can make the operation difficult to understand.\n\n## Multiple priorities\nA tuple key such as department and score compares the first field first. It compares the next field when the first fields are equal.\n\nStable passes also support mixed directions. The secondary key comes first. The primary key comes last. The final pass keeps secondary order within each primary group.\n\nThe reverse=True option also keeps stability. A reverse operation after an ascending sort can instead reverse tied records.\n\nStability keeps the input tie order. An more key such as an identifier can give deterministic output from arbitrary input order. A complete sort collects all input from a generator.",
+      "examples": [
+        {
+          "title": "Stable ties preserve input order",
+          "code": "rows = [(\"Ada\", 90), (\"Grace\", 80), (\"Lin\", 90)]\nordered = sorted(rows, key=lambda row: row[1])\nprint(ordered)\nprint(rows)",
+          "output": "[('Grace', 80), ('Ada', 90), ('Lin', 90)]\n[('Ada', 90), ('Grace', 80), ('Lin', 90)]",
+          "explanation": "Ada stays before Lin among the equal 90-point records. The sorted function leaves the source list unchanged.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does a stable sort keep?",
+          "options": [
+            "The whole initial list order",
+            "Relative order among equal-key records",
+            "Object identities only"
+          ],
+          "answer": 1,
+          "explanation": "Stability keeps relative order only within equal-key groups."
+        },
+        {
+          "prompt": "What does list.sort return?",
+          "options": [
+            "The sorted list",
+            "None",
+            "An iterator"
+          ],
+          "answer": 1,
+          "explanation": "The sort method changes its list and returns None."
+        },
+        {
+          "prompt": "For stable multi-pass sorting, which key is sorted last?",
+          "options": [
+            "The most significant key",
+            "The least significant key",
+            "A random key"
+          ],
+          "answer": 0,
+          "explanation": "The final primary pass keeps the earlier secondary order within each primary group."
+        }
+      ],
+      "part": "III",
+      "partTitle": "Algorithms and data structures",
+      "source": "https://docs.python.org/3/howto/sorting.html",
+      "confirmed": true
+    },
+    {
+      "id": 21,
+      "title": "The Two Sum algorithm",
+      "subtitle": "Two Sum finds two different positions whose values add to a target.",
+      "body": "## Result requirements\nThe two indices must differ. The two values can be equal. These examples return the first pair found in a left-to-right scan, or None.\n\nA search through each pair takes O(n²) time. A dictionary can avoid repeated searches through earlier values.\n\n## The complement lookup\nFor a current value x, the partner value is target - x. The dictionary maps earlier values to their indices.\n\nThe algorithm looks for the partner before it inserts x. A found index therefore belongs to an earlier position. The current element cannot match itself.\n\nBefore each iteration, the dictionary contains only processed positions. This is the loop invariant. It explains why a result uses different positions and why earlier partners stay available.\n\n## Repeated values and cost\nFor [3, 3] with target 6, the algorithm first keeps the index of the first 3. The second 3 then finds that entry.\n\nInsertion before the lookup could permit a one value to match itself. The setdefault method keeps the earliest stored index. Replacement of an index can change which correct pair the function returns.\n\nWith ordinary keys, expected time is O(n) and extra space is O(n). Severe collisions can increase the time. Floating-point approximate sums must use their own defined comparison rule.",
+      "examples": [
+        {
+          "title": "Find a pair using only earlier values",
+          "code": "def two_sum(values, target):\n    seen = {}\n    for index, value in enumerate(values):\n        complement = target - value\n        if complement in seen:\n            return seen[complement], index\n        seen.setdefault(value, index)\n    return None\n\nprint(two_sum([2, 7, 11, 15], 9))\nprint(two_sum([3, 3], 6))\nprint(two_sum([3], 6))",
+          "output": "(0, 1)\n(0, 1)\nNone",
+          "explanation": "The lookup occurs before insertion. An equal earlier value can match, but the current index cannot match itself.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Why look up before inserting the current value?",
+          "options": [
+            "To prevent using the same index twice",
+            "To sort the input",
+            "To avoid all duplicates"
+          ],
+          "answer": 0,
+          "explanation": "The dictionary must contain only earlier positions at the lookup."
+        },
+        {
+          "prompt": "Does [3, 3] contain a valid pair for target 6?",
+          "options": [
+            "No, values must differ",
+            "Yes, the indices differ",
+            "Only after sorting"
+          ],
+          "answer": 1,
+          "explanation": "Different indices can contain equal values."
+        },
+        {
+          "prompt": "What is the expected time with ordinary dictionary keys?",
+          "options": [
+            "O(n)",
+            "O(n²) always",
+            "O(log n)"
+          ],
+          "answer": 0,
+          "explanation": "The algorithm does one expected-constant-time lookup and insertion per value."
+        }
+      ],
+      "part": "III",
+      "partTitle": "Algorithms and data structures",
+      "source": "https://docs.python.org/3/library/stdtypes.html#mapping-types-dict",
+      "confirmed": true
+    },
+    {
+      "id": 22,
+      "title": "Heaps and Top-K selection",
+      "subtitle": "A heap can select a small result without a complete sort of the input.",
+      "body": "## Heap order\nIn a min-heap, each parent is no greater than its children. The smallest value is at index zero. The full array is not sorted.\n\nThe heapify operation takes O(n) time. A push or pop takes O(log n) time because it repairs one tree path. Binary search does not apply to the heap array.\n\n## A small selection\nThe heapq.nsmallest function returns the k smallest values in sorted order. For small k relative to n, heap selection commonly takes O(n log k) time and O(k) space.\n\nThe helper has special paths. It can use a minimum for one result and a full sort for a large selection. When k approaches n, a full sort can be simpler and faster.\n\n## The largest k values\nA min-heap can keep the largest k candidates. After the heap becomes full, its root is the smallest selected value. This is the cutoff.\n\nA new value below the cutoff does not enter the result. A larger value can replace the root through heapreplace. A final sort can arrange the selected output.\n\nRecord selection can use a key function. A priority queue can use a counter to resolve equal priorities without payload comparisons. The result requirements must specify whether ties can increase the result beyond k items.",
+      "examples": [
+        {
+          "title": "Select without fully ordering each input",
+          "code": "import heapq\nvalues = [9, 1, 8, 2, 7, 3, 6]\nprint(heapq.nsmallest(3, values))\nprint(heapq.nlargest(2, values))\nheapq.heapify(values)\nprint(values[0])\nprint(heapq.heappop(values))",
+          "output": "[1, 2, 3]\n[9, 8]\n1\n1",
+          "explanation": "The heap root is the smallest value. Other heap positions do not have a complete sorted order.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Is a heap array fully sorted?",
+          "options": [
+            "Yes",
+            "No, it satisfies a parent/child invariant",
+            "Only for strings"
+          ],
+          "answer": 1,
+          "explanation": "The parent-child rule does not fully order all array positions."
+        },
+        {
+          "prompt": "Which structure keeps the largest k using a cutoff at its root?",
+          "options": [
+            "A min-heap of retained candidates",
+            "An unsorted tuple of all values",
+            "A set of each input"
+          ],
+          "answer": 0,
+          "explanation": "The smallest retained value is the cutoff for a larger new candidate."
+        },
+        {
+          "prompt": "When is a full sort often preferable?",
+          "options": [
+            "When k is close to n",
+            "When k is always 1",
+            "Never"
+          ],
+          "answer": 0,
+          "explanation": "The selection benefit becomes smaller when the requested output approaches the whole input."
+        }
+      ],
+      "part": "III",
+      "partTitle": "Algorithms and data structures",
+      "source": "https://docs.python.org/3/library/heapq.html",
+      "confirmed": true
+    },
+    {
+      "id": 23,
+      "title": "Hash invariants and collisions",
+      "subtitle": "A hash finds possible keys. Equality identifies the correct key.",
+      "body": "## Hash collisions\nA dictionary uses a hash to find candidate keys. Equality distinguishes the candidates.\n\nDifferent values can have the same hash. They can stay separate dictionary entries. Equal hashable values, however, must have equal hashes.\n\nIf equal keys have different hashes, lookup can search the wrong location.\n\n## Stable key data\nHash fields and equality fields must stay stable while a key is in the dictionary. A change after insertion can cause lookup failures.\n\nA constant-hash class can stay correct if its equality is correct. It can be slow because lookup compares many candidates.\n\nOrdinary well-distributed keys give expected O(1) lookup. Severe collisions can increase this cost toward O(n).\n\n## Equality controls different entries\nThe values 1 and True compare equal and have equal hashes. An assignment with either value updates one logical entry. A compound key can include type when the application must keep different entries.\n\nContainers can recognize an identical key without ordinary value comparison. This matters for special values such as NaN.\n\n## Exact identification\nBuilt-in hashes are not unique permanent identifiers. Some hashes also differ between processes.\n\nExact deduplication must compare full normalized values. A deterministic digest can route records to disk partitions. A digest collision must not cause unequal initial records to become one record.",
+      "examples": [
+        {
+          "title": "Colliding keys stay different",
+          "code": "class Key:\n    def __init__(self, value):\n        self.value = value\n    def __hash__(self):\n        return 0\n    def __eq__(self, other):\n        if not isinstance(other, Key):\n            return NotImplemented\n        return self.value == other.value\n\nmapping = {Key(\"a\"): 1, Key(\"b\"): 2}\nprint(len(mapping))\nprint(mapping[Key(\"a\")], mapping[Key(\"b\")])",
+          "output": "2\n1 2",
+          "explanation": "All keys have the same hash in this example. Equality distinguishes the values a and b.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Do equal hashes prove equal values?",
+          "options": [
+            "Yes",
+            "No",
+            "Only for strings"
+          ],
+          "answer": 1,
+          "explanation": "Hash collisions do not prove equality."
+        },
+        {
+          "prompt": "What does a constant __hash__ primarily harm if equality is correct?",
+          "options": [
+            "Lookup performance",
+            "All dictionary correctness",
+            "Class creation"
+          ],
+          "answer": 0,
+          "explanation": "Equal-key lookup stays correct, but many candidates can make it slow."
+        },
+        {
+          "prompt": "What is required for exact disk deduplication?",
+          "options": [
+            "Store only built-in hashes",
+            "Compare full canonical values after routing",
+            "Assume digests never collide"
+          ],
+          "answer": 1,
+          "explanation": "A routing hash must not replace the initial value in an exact comparison."
+        }
+      ],
+      "part": "III",
+      "partTitle": "Algorithms and data structures",
+      "source": "https://docs.python.org/3/reference/datamodel.html#object.__hash__",
+      "confirmed": true
+    },
+    {
+      "id": 24,
+      "title": "External-memory algorithms",
+      "subtitle": "Disk partitions permit exact deduplication when the full working set exceeds RAM.",
+      "body": "## Separate disk partitions\nStrings, references, and hash-table capacity can make an ID set larger than the raw input file. A full in-memory set can exceed RAM.\n\nHash partitioning separates the input into disk shards. Each shard must fit the available memory for its deduplication step.\n\nThe program first normalizes each ID under one consistent rule. A deterministic function then sends equal normalized IDs to the same shard.\n\nDifferent IDs can enter one shard. This is safe because the deduplication step compares their full values.\n\n## The largest shard\nThe program reads one fitting shard, removes duplicate full IDs, and writes the different results. The memory estimate must include object overhead and the number of different IDs.\n\nAn uneven distribution can make one shard too large. More digest bits can repartition that shard. External sorting is a different option. The same routing rule alone does not guarantee smaller partitions.\n\nBuilt-in string hashes can differ between processes. A specified digest such as BLAKE2 gives reproducible routing. A Bloom filter alone cannot guarantee exact results because false positives can discard new values.\n\n## Output and recovery\nCombined shard output does not keep first-seen order. Earliest positions and a different ordering step can keep that order.\n\nThe process must limit open files and batch writes. It must have temporary disk space and a record of completed stages.",
+      "examples": [
+        {
+          "title": "Route deterministically, compare full IDs",
+          "code": "from hashlib import blake2b\n\ndef shard_for(value, count):\n    digest = blake2b(value.encode(\"utf-8\"), digest_size=8).digest()\n    return int.from_bytes(digest, \"big\") % count\n\nids = [\"a\", \"b\", \"a\", \"c\", \"b\"]\nshards = [[] for _ in range(4)]\nfor value in ids:\n    shards[shard_for(value, len(shards))].append(value)\nunique = set()\nfor shard in shards:\n    unique.update(set(shard))\nprint(sorted(unique))\nprint(shard_for(\"a\", 4) == shard_for(\"a\", 4))",
+          "output": "['a', 'b', 'c']\nTrue",
+          "explanation": "This small in-memory example shows deterministic routing. A large implementation writes and reads the shards on disk.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Why does shard-by-shard deduplication work?",
+          "options": [
+            "Each hash is unique",
+            "Equal canonical IDs route to the same shard",
+            "Each shard has the same size"
+          ],
+          "answer": 1,
+          "explanation": "All occurrences of an equal normalized ID reach one shard."
+        },
+        {
+          "prompt": "What should happen to an oversized shard?",
+          "options": [
+            "Assume it fits",
+            "Repartition with more distinguishing bits or externally sort it",
+            "Discard its extra records"
+          ],
+          "answer": 1,
+          "explanation": "The largest shard must fit the available memory. More partitioning or external sorting can reduce the working set."
+        },
+        {
+          "prompt": "Does shard concatenation keep first-seen order?",
+          "options": [
+            "Automatically",
+            "No, that needs more sequence metadata and ordering",
+            "Only with four shards"
+          ],
+          "answer": 1,
+          "explanation": "Shard order differs from input order. Earliest-position data and a different ordering step can keep first-seen order."
+        }
+      ],
+      "part": "III",
+      "partTitle": "Algorithms and data structures",
+      "source": "https://docs.python.org/3/library/hashlib.html",
+      "confirmed": true
+    },
+    {
+      "id": 25,
+      "title": "Extract Function refactoring",
+      "subtitle": "Extract Function moves one complete operation into a named function.",
+      "body": "## One implementation of a rule\nRepeated validation can change differently in separate locations. A shared function gives that rule one implementation.\n\nThe function name states the operation that the caller uses. Two business rules can use similar syntax but have different meanings.\n\n## Behavior must stay the same\nA structural refactor keeps return values, errors, data changes, and relevant operation order. If two checks fail, their order determines the first reported error.\n\nA changed validation policy is a separate behavior change. A combined change makes failure causes more difficult to identify.\n\nThe extracted function must have clear inputs and results. Explicit arguments avoid new dependencies on hidden global state.\n\n## Related actions\nValidation examines data. Normalization changes its form. If a function does the two, its name must describe the two actions.\n\nMany Boolean switches can indicate unrelated policies in one helper. A registration name and a display label can have different rules, even if the two currently contain strings.\n\nA safe change sequence starts with one caller and a behavior check. Other callers then use the new function. The old duplicate implementations no longer remain.\n\nTests through the public callers show whether correct inputs, incorrect inputs, and empty inputs keep their previous behavior. The result is one rule that is easier to find without a change to its meaning.",
+      "examples": [
+        {
+          "title": "One owner for a shared validation rule",
+          "code": "def require_name(raw):\n    name = raw.strip()\n    if not name:\n        raise ValueError(\"name is required\")\n    return name\n\ndef register(raw):\n    return {\"name\": require_name(raw)}\n\ndef rename(raw):\n    return \"Renamed to \" + require_name(raw)\n\nprint(register(\" Ada \"))\nprint(rename(\" Grace \"))",
+          "output": "{'name': 'Ada'}\nRenamed to Grace",
+          "explanation": "The two callers use the same function. That function removes outer whitespace and rejects an empty name.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Which observations must stay the same after a behavior-preserving extraction?",
+          "options": [
+            "Only successful return values",
+            "Outputs, errors, mutation, and relevant ordering",
+            "The exact old line count"
+          ],
+          "answer": 1,
+          "explanation": "Callers can observe errors, data changes, and operation order as well as return values."
+        },
+        {
+          "prompt": "What can many Boolean switches in the helper indicate?",
+          "options": [
+            "Unrelated policies were merged",
+            "The helper is automatically faster",
+            "The code is fully typed"
+          ],
+          "answer": 0,
+          "explanation": "Similar syntax can hide different business rules."
+        },
+        {
+          "prompt": "What does a useful extracted function name describe?",
+          "options": [
+            "do_stuff",
+            "A name describing the complete operation",
+            "The first variable in the old block"
+          ],
+          "answer": 1,
+          "explanation": "A complete operation name states why the caller uses the helper."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://refactoring.com/catalog/extractFunction.html",
+      "confirmed": true
+    },
+    {
+      "id": 26,
+      "title": "Polymorphism and conditional replacement",
+      "subtitle": "Polymorphism lets different objects give the same operation.",
+      "body": "## Repeated type decisions\nSeveral consumers can contain the same type tests before a render operation. A new document type then causes changes in each consumer.\n\nAn alternative gives each implementation a render method. Consumers call that method directly. This is polymorphism.\n\nPython supports polymorphism through inheritance, Protocols, or compatible objects without a shared base class.\n\n## A common operation\nEach old branch moves into its related implementation. Its results and errors stay the same. Consumers then use the common operation instead of repeated type tests.\n\nA one setup location can choose the implementation. Polymorphism can keep some conditionals.\n\nSmall stateless transformations can use a dictionary of functions instead of several classes.\n\n## Compatible behavior\nA shared method name does not prove compatibility. A renderer that returns text differs from one that writes a file and returns None.\n\nImplementations must use the same input meanings and output requirements. Their errors and effects on caller data must also agree.\n\nConcrete-type tests in consumers can indicate exceptions to these rules. The common operation must then have a clearer definition.\n\nA one conditional over a small fixed choice can stay simpler. Tests must examine each implementation's behavior and the setup decision independently. A correct implementation cannot help if setup selects the wrong one.",
+      "examples": [
+        {
+          "title": "Call behavior without checking types",
+          "code": "class Plain:\n    def render(self, text):\n        return text\n\nclass Bracketed:\n    def render(self, text):\n        return f\"[{text}]\"\n\ndef publish(renderer, text):\n    return renderer.render(text)\n\nprint(publish(Plain(), \"hello\"))\nprint(publish(Bracketed(), \"hello\"))",
+          "output": "hello\n[hello]",
+          "explanation": "The publish function calls render. It does not test the renderer type.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Does polymorphism require a common base class in Python?",
+          "options": [
+            "Always",
+            "No, compatible behavior can be structural",
+            "Only for functions"
+          ],
+          "answer": 1,
+          "explanation": "Compatible behavior can support structural polymorphism without inheritance."
+        },
+        {
+          "prompt": "Must each conditional disappear?",
+          "options": [
+            "Yes",
+            "No, selection can stay at a boundary",
+            "Only if there are three classes"
+          ],
+          "answer": 1,
+          "explanation": "One setup decision can stay while consumers stop repeating type checks."
+        },
+        {
+          "prompt": "When might a function table be better?",
+          "options": [
+            "For small stateless transformations",
+            "When each case has unrelated outputs",
+            "When no variation exists"
+          ],
+          "answer": 0,
+          "explanation": "Functions can represent small stateless alternatives without more classes."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://refactoring.com/catalog/replaceConditionalWithPolymorphism.html",
+      "confirmed": true
+    },
+    {
+      "id": 27,
+      "title": "SOLID: Open/Closed and Liskov Substitution",
+      "subtitle": "Extensions must keep the behavior that existing callers use.",
+      "body": "## Open/Closed\nA pricing function can accept a discount policy. A new policy can work without a different branch in the pricing function. Application setup selects the policy.\n\nThe Open/Closed Principle supports an extension point for a real variation. It does not prohibit all changes to existing files.\n\n## Liskov Substitution\nA replacement must accept the promised inputs and supply the promised results. A matching method name or signature is not sufficient.\n\nA subtype must not strengthen preconditions. If a reader accepts all nonnegative counts, a subtype cannot reject counts greater than ten without violating that requirement.\n\nA subtype must not weaken successful guarantees. A writer that promises data retention cannot silently discard writes. Errors and side effects also form part of the specified behavior.\n\n## Behavior before categories\nA mutable rectangle can permit independent width and height assignments. A square that changes the two dimensions on either assignment violates that interface.\n\nThe mathematical relationship does not prove software substitutability. A smaller immutable shape interface that supplies area can support the two types.\n\nProtocols and type checkers examine structural compatibility. They do not prove all behavior. Data retention and changes to caller data must have their own evidence.\n\nA small interface with clear requirements is easier for each implementation to support. Separate interfaces can help when implementations cannot support the same usual operations.",
+      "examples": [
+        {
+          "title": "Extend a consumer through a policy",
+          "code": "def no_discount(amount):\n    return amount\n\ndef member_discount(amount):\n    return amount * 9 // 10\n\ndef invoice(amount, policy):\n    if amount < 0:\n        raise ValueError(\"negative amount\")\n    return policy(amount)\n\nprint(invoice(100, no_discount))\nprint(invoice(100, member_discount))",
+          "output": "100\n90",
+          "explanation": "The invoice function accepts a supplied policy. Each policy supplies the amount calculation.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Does Open/Closed mean existing code may never be edited?",
+          "options": [
+            "Yes",
+            "No, it guides a chosen extension boundary",
+            "Only after release"
+          ],
+          "answer": 1,
+          "explanation": "The principle supports a chosen extension point. It does not prohibit maintenance."
+        },
+        {
+          "prompt": "Can a subtype reject inputs the base contract accepts?",
+          "options": [
+            "Freely",
+            "That strengthens preconditions and can break substitution",
+            "Only if it has more methods"
+          ],
+          "answer": 1,
+          "explanation": "A valid caller must stay valid with the replacement implementation."
+        },
+        {
+          "prompt": "Does matching a Protocol prove semantic substitutability?",
+          "options": [
+            "Yes",
+            "No, behavioral obligations need reasoning and tests",
+            "Only at runtime"
+          ],
+          "answer": 1,
+          "explanation": "A matching structure does not prove that an implementation keeps its behavioral promises."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://docs.python.org/3/library/typing.html#typing.Protocol",
+      "confirmed": true
+    },
+    {
+      "id": 28,
+      "title": "The Strategy pattern",
+      "subtitle": "A strategy is a supplied algorithm that a consumer can replace.",
+      "body": "## Separate the algorithm\nA checkout can use a standard shipping calculation or an express shipping calculation. The checkout adds the result. The supplied strategy determines the formula.\n\nSetup can select the strategy, or the caller can supply it per call. The strategy can stay the same throughout execution.\n\n## Functions and callable objects\nA small stateless strategy can be a function. A callable object can keep configuration or state with the algorithm. A strategy can work without a common base class.\n\nThe consumer calls the shared operation. Concrete-type tests in the consumer would repeat the initial selection problem.\n\n## Required behavior\nStrategies must have compatible input meanings, result types, errors, and data-change rules. An unexpected change to caller input can break compatibility despite equal signatures.\n\nA price strategy must also specify units and a rounding rule. Integer minor units distinguish pounds from pence but do not determine each fraction rule.\n\nA clear setup or call location selects the implementation. A test can supply a deterministic strategy and examine the consumer result. Separate tests can examine independent algorithm rules.\n\nStrategy usually uses composition. Template Method uses inherited steps in a fixed sequence. The variation determines which design is suitable. A callback can work without a class hierarchy.",
+      "examples": [
+        {
+          "title": "Functions as shipping strategies",
+          "code": "def standard(weight):\n    return 300 + weight * 50\n\ndef express(weight):\n    return 700 + weight * 80\n\ndef checkout(subtotal, weight, shipping):\n    return subtotal + shipping(weight)\n\nprint(checkout(2000, 2, standard))\nprint(checkout(2000, 2, express))",
+          "output": "2400\n2860",
+          "explanation": "The checkout adds the subtotal and shipping cost. The supplied function calculates that shipping cost.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Must a Strategy be a subclass?",
+          "options": [
+            "Yes",
+            "No, a callable can be sufficient",
+            "Only if selected at runtime"
+          ],
+          "answer": 1,
+          "explanation": "A function or callable object can supply the strategy operation."
+        },
+        {
+          "prompt": "Where should strategy selection usually live?",
+          "options": [
+            "In repeated type checks in each consumer",
+            "At a clear composition or call boundary",
+            "In __hash__"
+          ],
+          "answer": 1,
+          "explanation": "Explicit selection keeps the consumer separate from concrete alternatives."
+        },
+        {
+          "prompt": "Which issue breaks interchangeability?",
+          "options": [
+            "Different internal algorithms",
+            "Unexpected mutation of caller input by one strategy",
+            "Different class names"
+          ],
+          "answer": 1,
+          "explanation": "Unexpected changes to caller data can violate the common behavior."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://docs.python.org/3/library/typing.html#typing.Callable",
+      "confirmed": true
+    },
+    {
+      "id": 29,
+      "title": "Dependency injection",
+      "subtitle": "Dependency injection supplies a component with the objects or functions that it uses.",
+      "body": "## Explicit dependencies\nA service that makes its own sender chooses the sender configuration and lifetime. A test must then replace that hidden construction or contact the provider.\n\nDependency injection supplies the sender from outside, as in WelcomeService(sender). The design can work without a framework. Application setup chooses the concrete sender.\n\n## A small interface\nThe send operation can be sufficient for a component. The component does not always use a complete application container. A typing.Protocol declaration describes compatible operations without mandatory inheritance.\n\nProtocols mainly support static type checks. They do not automatically validate runtime arguments or prove delivery behavior. A runtime-checkable protocol mainly examines member presence.\n\n## A test implementation\nA test sender can keep messages in a list. A test makes the service with that sender and calls the public operation. The recorded message shows the service result without contact with an external provider.\n\nA fixed clock function can similarly supply repeatable time values.\n\nThese tests do not prove real authentication, retries, timeouts, or delivery. Those provider requirements must have separate checks.\n\n## Resource lifetime\nThe creator of a shared connection usually determines when it closes. A consumer must not unexpectedly close it after one operation.\n\nA global service locator hides dependencies again through arbitrary internal lookups. Explicit arguments identify the sender, repository, or function that the component uses.",
+      "examples": [
+        {
+          "title": "A Protocol and an in-memory collaborator",
+          "code": "from typing import Protocol\n\nclass Sender(Protocol):\n    def send(self, recipient: str, text: str) -> None: ...\n\nclass MemorySender:\n    def __init__(self):\n        self.messages = []\n    def send(self, recipient, text):\n        self.messages.append((recipient, text))\n\nclass Welcome:\n    def __init__(self, sender: Sender):\n        self.sender = sender\n    def run(self, recipient):\n        self.sender.send(recipient, \"Welcome!\")\n\nsender = MemorySender()\nWelcome(sender).run(\"ada@example.test\")\nprint(sender.messages)",
+          "output": "[('ada@example.test', 'Welcome!')]",
+          "explanation": "The service uses the send operation. The in-memory sender records the result without contact with a provider.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Does dependency injection require a framework?",
+          "options": [
+            "Yes",
+            "No, passing a dependency is sufficient",
+            "Only for databases"
+          ],
+          "answer": 1,
+          "explanation": "An explicit constructor or function argument can supply the dependency."
+        },
+        {
+          "prompt": "Does a Protocol prove provider delivery behavior?",
+          "options": [
+            "Yes",
+            "No, it describes structural expectations",
+            "Only with annotations"
+          ],
+          "answer": 1,
+          "explanation": "The protocol describes structure. Actual provider behavior must have separate evidence."
+        },
+        {
+          "prompt": "What weakens explicit injection?",
+          "options": [
+            "A small sender interface",
+            "Passing a global service locator that hides actual dependencies",
+            "A deterministic clock callable"
+          ],
+          "answer": 1,
+          "explanation": "A service locator permits hidden internal dependencies."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://peps.python.org/pep-0544/",
+      "confirmed": true
+    },
+    {
+      "id": 30,
+      "title": "Characterization testing",
+      "subtitle": "A characterization test records the current behavior of existing code.",
+      "body": "## An observation before a refactor\nA characterization test records what existing code does. It does not prove that the behavior is desirable.\n\nA public return value, exception, saved record, message, or file can supply the observation. Private helper names are poor evidence because a correct refactor can change them.\n\n## Independent expected results\nUseful cases include usual inputs, boundaries, empty inputs, and known failures. Whitespace behavior and the first validation error can also matter.\n\nA reviewer must examine the expected results. A call to the same implementation to produce its own expected result makes the test circular.\n\nFixed inputs can control irrelevant variation such as timestamps and random identifiers. Limited normalization can remove irrelevant differences. It must not remove differences that indicate a failure.\n\nA reviewer must also examine a large snapshot to identify the necessary observations.\n\n## Preservation and correction\nA characterization test can record an existing bug. A later behavior-change test can specify the correction. An unexplained expectation change does not form a behavior-preserving refactor.\n\nA supplied clock or repository can make the public operation testable. A private-state export solely for one test can prevent useful structural changes.\n\nA baseline and one coherent refactor permit a direct comparison of public observations. Successful cases support those cases. They do not prove behavior for each possible input.",
+      "examples": [
+        {
+          "title": "Record the observed legacy contract",
+          "code": "def legacy_label(name, active):\n    if not name:\n        return \"unknown\"\n    return name.strip().upper() + (\"!\" if active else \".\")\n\ncases = [\n    ((\" Ada \", True), \"ADA!\"),\n    ((\"Grace\", False), \"GRACE.\"),\n    ((\"\", True), \"unknown\"),\n    ((\"   \", False), \".\"),\n]\nfor args, expected in cases:\n    assert legacy_label(*args) == expected\nprint(\"4 observed behaviors preserved\")",
+          "output": "4 observed behaviors preserved",
+          "explanation": "Whitespace-only input gives a dot in the existing implementation. The test records that result without stating that the result is desirable.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Does a characterization test prove a behavior is desirable?",
+          "options": [
+            "Yes",
+            "No, it records an observation",
+            "Only if it passes"
+          ],
+          "answer": 1,
+          "explanation": "An observed current result is not necessarily a desirable product result."
+        },
+        {
+          "prompt": "Which source gives the strongest expected test result?",
+          "options": [
+            "An explicit reviewed result",
+            "A result generated by the function under test",
+            "The current private helper count"
+          ],
+          "answer": 0,
+          "explanation": "An independently reviewed expected result can reveal a changed implementation result."
+        },
+        {
+          "prompt": "Which snapshot differences can a test remove?",
+          "options": [
+            "Only irrelevant nondeterminism",
+            "Each difference regardless of meaning",
+            "All exceptions"
+          ],
+          "answer": 0,
+          "explanation": "Normalization must remove only differences that do not matter to the test."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://docs.python.org/3/library/unittest.html",
+      "confirmed": true
+    },
+    {
+      "id": 31,
+      "title": "The Law of Demeter",
+      "subtitle": "The Law of Demeter limits a caller's knowledge of other objects' internal structure.",
+      "body": "## Access chains\nThe expression order.customer.account.plan.discount.rate uses several object relationships. A change to any relationship can cause a caller change.\n\nThe Law of Demeter encourages communication with immediate collaborators instead of access through unrelated internals. It is not a mechanical limit on dots.\n\n## A complete operation\nThe method customer.discount_for(order) can supply the amount that checkout uses. Customer-related code then contains the account and plan rules.\n\nA useful method hides a complete rule or representation. Several trivial forwarding methods can instead spread the same dependencies across more files.\n\nGetters are not automatically incorrect. Plain data records can intentionally expose fields. Fluent builders and tree traversal can also use multiple dots correctly.\n\n## Focused responsibilities\nOne object does not contain each possible operation. The code can stay with its data. Alternatively, a focused collaborator or one directly supplied value can give a simpler design.\n\nTests can reveal excessive coupling. Many nested mocks can indicate that a client depends on too much internal structure.\n\nA test double for discount_for avoids a complete account and plan graph in each checkout test. The public method must keep its specified behavior. Internal representation changes then do not affect the caller.\n\nThe useful measure is the number of assumptions about other objects, rather than the punctuation count.",
+      "examples": [
+        {
+          "title": "Give the owning object the useful operation",
+          "code": "class Customer:\n    def __init__(self, discount_percent):\n        self.discount_percent = discount_percent\n    def discount_for(self, amount):\n        return amount * self.discount_percent // 100\n\ndef checkout(amount, customer):\n    return amount - customer.discount_for(amount)\n\nprint(checkout(1000, Customer(15)))",
+          "output": "850",
+          "explanation": "The checkout requests a discount amount. Customer code determines that amount without exposing its storage structure.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Is the Law of Demeter just a maximum-dot-count rule?",
+          "options": [
+            "Yes",
+            "No, it concerns knowledge and coupling",
+            "Only in Python"
+          ],
+          "answer": 1,
+          "explanation": "The principle limits structural knowledge. It does not impose an arbitrary punctuation count."
+        },
+        {
+          "prompt": "What must a useful replacement operation do?",
+          "options": [
+            "It hides a coherent responsibility or representation",
+            "It forwards each nested field separately",
+            "It always uses inheritance"
+          ],
+          "answer": 0,
+          "explanation": "The operation must remove a real dependency on internal structure."
+        },
+        {
+          "prompt": "What can many nested mocks indicate?",
+          "options": [
+            "The client may depend on too much internal structure",
+            "The domain is fully encapsulated",
+            "All tests should be removed"
+          ],
+          "answer": 0,
+          "explanation": "The test setup can reveal excessive knowledge of nested objects."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://docs.python.org/3/tutorial/classes.html#private-variables",
+      "confirmed": true
+    },
+    {
+      "id": 32,
+      "title": "The Template Method pattern",
+      "subtitle": "Template Method keeps one fixed sequence and lets subclasses supply selected steps.",
+      "body": "## A shared sequence\nSeveral processes can read, validate, transform, and publish data in the same order. Their transformations can differ.\n\nTemplate Method puts that sequence in a base method. The base method calls selected overridable steps. Subclasses supply those steps without a copy of the full process.\n\n## Defined hooks\nAn abstract method makes a step mandatory for each concrete subclass. An optional hook can have a default implementation with no action.\n\nThe hook rules must state possible data changes, errors, and resource acquisition. A subclass override of the template itself can bypass shared checks.\n\nThe typing.final annotation guides static tools. It does not prohibit an override at runtime. Too many hooks can make the sequence difficult to follow.\n\n## Shared cleanup\nThe template contains mandatory cleanup in try/finally or a context manager. Each subclass does not have to repeat the same cleanup rule.\n\nFailures stay visible unless the operation can recover. Suppression of each hook error can make incomplete work appear successful.\n\nStrategy usually supplies a function or object through composition. Template Method varies inherited steps within a fixed sequence.\n\nA public-operation test can use concrete subclasses and a failed step. The observations include meaningful order and cleanup. Incidental private calls do not automatically form part of the specified behavior.",
+      "examples": [
+        {
+          "title": "One skeleton, two transformations",
+          "code": "from abc import ABC, abstractmethod\n\nclass Pipeline(ABC):\n    def run(self, text):\n        cleaned = text.strip()\n        if not cleaned:\n            raise ValueError(\"empty input\")\n        return self.transform(cleaned)\n    @abstractmethod\n    def transform(self, text):\n        pass\n\nclass Upper(Pipeline):\n    def transform(self, text):\n        return text.upper()\n\nclass Lower(Pipeline):\n    def transform(self, text):\n        return text.lower()\n\nprint(Upper().run(\" Ada \"))\nprint(Lower().run(\" ADA \"))",
+          "output": "ADA\nada",
+          "explanation": "The two classes use the same trim and validation steps. Each class supplies its own text transformation.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What is fixed in Template Method?",
+          "options": [
+            "Each implementation detail",
+            "The orchestration sequence",
+            "Each subclass's class name"
+          ],
+          "answer": 1,
+          "explanation": "Selected hooks can vary while the template keeps the shared sequence."
+        },
+        {
+          "prompt": "How does Strategy usually vary behavior?",
+          "options": [
+            "Through composition with a supplied algorithm",
+            "Only through a base template",
+            "Through global variables"
+          ],
+          "answer": 0,
+          "explanation": "Strategy usually supplies a separate algorithm through composition."
+        },
+        {
+          "prompt": "Where should mandatory cleanup usually live?",
+          "options": [
+            "In each subclass by convention",
+            "In the lifecycle owner's cleanup boundary",
+            "Nowhere if hooks are abstract"
+          ],
+          "answer": 1,
+          "explanation": "The template can enforce the cleanup rule for each implementation."
+        }
+      ],
+      "part": "IV",
+      "partTitle": "Software design and architecture",
+      "source": "https://docs.python.org/3/library/abc.html",
+      "confirmed": true
+    },
+    {
+      "id": 33,
+      "title": "Exception handling",
+      "subtitle": "A narrow exception handler handles an expected failure without suppressing unrelated signals.",
+      "body": "## Specific failures\nAn integer conversion can raise ValueError. A handler near that operation can supply a defined response.\n\nA small try block reduces the risk of an unrelated error reaching the wrong handler. A caught exception does not itself restore a correct application state.\n\n## Exception and BaseException\nMost application failures inherit from Exception. KeyboardInterrupt, SystemExit, and GeneratorExit inherit from BaseException outside Exception.\n\nA bare except catches those signals too. It can stop interruption or shutdown. Specific exception types are suitable near expected failures. An application-wide handler can deliberately catch Exception.\n\nModern asyncio.CancelledError also inherits from BaseException. Cleanup usually permits cancellation to propagate afterward.\n\n## The initial failure\nA bare raise in a handler re-raises the active exception with its traceback. The form raise DomainError(...) from error keeps an explicit cause.\n\nThe else block contains successful follow-up work whose errors must not reach the preceding handlers. The finally block contains cleanup. It does not prove success.\n\n## Recovery\nRetries must have limits and a safe repeat policy. A timeout after a side effect can have an uncertain outcome. A different attempt can duplicate that effect.\n\nA None result for each error can make failure appear to be an ordinary absent value. A different failure result or an applicable exception handler avoids that confusion.",
+      "examples": [
+        {
+          "title": "Catch the conversion failure only",
+          "code": "def parse_count(text):\n    try:\n        count = int(text)\n    except ValueError:\n        return \"invalid integer\"\n    else:\n        if count < 0:\n            return \"negative count\"\n        return count\n\nprint(parse_count(\"12\"))\nprint(parse_count(\"hello\"))\nprint(parse_count(\"-1\"))",
+          "output": "12\ninvalid integer\nnegative count",
+          "explanation": "The handler responds to the integer conversion error. The negative-count condition has a different response.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does a bare except catch that except Exception usually does not?",
+          "options": [
+            "KeyboardInterrupt and SystemExit",
+            "Only ValueError",
+            "No more types"
+          ],
+          "answer": 0,
+          "explanation": "Those signals inherit from BaseException outside Exception."
+        },
+        {
+          "prompt": "Why keep a try block narrow?",
+          "options": [
+            "To avoid misclassifying unrelated failures",
+            "To disable tracebacks",
+            "To make all code asynchronous"
+          ],
+          "answer": 0,
+          "explanation": "An unrelated operation can otherwise send an error to the wrong handler."
+        },
+        {
+          "prompt": "Which statement re-raises the active exception in a handler?",
+          "options": [
+            "raise",
+            "return error",
+            "pass"
+          ],
+          "answer": 0,
+          "explanation": "A bare raise keeps the active exception and its traceback."
+        }
+      ],
+      "part": "V",
+      "partTitle": "Concurrency, exceptions, and resources",
+      "source": "https://docs.python.org/3/tutorial/errors.html",
+      "confirmed": true
+    },
+    {
+      "id": 34,
+      "title": "Context managers and file handling",
+      "subtitle": "The with statement gives an open file a defined lifetime.",
+      "body": "## File closure\nAfter successful entry, a with statement closes its file when the body exits. This includes usual completion, an exception, a return, or a break.\n\nGarbage collection does not guarantee prompt closure. Python implementations can reclaim unreachable objects at different times.\n\n## Lazy input\nThe read method collects the whole file. Line iteration can use less working memory if later code does not collect each value again.\n\nAn iterator uses its source during consumption. An iterator over an already closed file cannot read more data.\n\nA generator can keep a with block open between yields. If the caller stops early, an explicit cleanup policy can be necessary. A caller-owned stream passed to a helper is a different clear arrangement.\n\n## Partial writes\nFile closure does not undo a partial write. An error during a report can leave incomplete contents.\n\nA temporary file and replacement after success can support complete publication where the filesystem gives the specified behavior. More synchronization can be necessary for power-loss durability.\n\nThe file format specifies a text encoding, such as UTF-8. Ignored decoding errors can change record values. Binary mode supplies bytes instead of decoded text.\n\nMultiple managers exit in reverse entry order. ExitStack supports a resource count determined at runtime. A helper must not unexpectedly close a stream that the caller owns.",
+      "examples": [
+        {
+          "title": "The handle closes even on failure",
+          "code": "from tempfile import TemporaryDirectory\nfrom pathlib import Path\n\nwith TemporaryDirectory() as temp:\n    path = Path(temp) / \"notes.txt\"\n    path.write_text(\"objects\\nclosures\\n\", encoding=\"utf-8\")\n    stream = None\n    try:\n        with path.open(encoding=\"utf-8\") as stream:\n            print(next(stream).strip())\n            raise ValueError(\"stop reading\")\n    except ValueError:\n        print(\"handled\")\n    print(stream.closed)",
+          "output": "objects\nhandled\nTrue",
+          "explanation": "The file context closes the stream before the outer handler continues. Browser examples use a temporary virtual filesystem.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Does with open(...) close the file after an exception?",
+          "options": [
+            "Yes, if entry succeeded",
+            "No",
+            "Only for ValueError"
+          ],
+          "answer": 0,
+          "explanation": "The file manager closes the stream when execution leaves the block after successful entry."
+        },
+        {
+          "prompt": "Does closing a file automatically roll back partial writes?",
+          "options": [
+            "Yes",
+            "No",
+            "Only in text mode"
+          ],
+          "answer": 1,
+          "explanation": "Closure releases the resource. It does not reverse earlier writes."
+        },
+        {
+          "prompt": "Where should a lazy file iterator be consumed?",
+          "options": [
+            "After its handle is closed",
+            "While its resource stays valid",
+            "Only after reading the entire file twice"
+          ],
+          "answer": 1,
+          "explanation": "Deferred reads use the source resource."
+        }
+      ],
+      "part": "V",
+      "partTitle": "Concurrency, exceptions, and resources",
+      "source": "https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files",
+      "confirmed": true
+    },
+    {
+      "id": 35,
+      "title": "The finally block",
+      "subtitle": "The finally block runs before a pending return or exception completes.",
+      "body": "## Control flow\nThe finally block runs when execution leaves its try construct. Usual completion, return, break, continue, and exception propagation all cause this exit.\n\nThe block does not run while execution stays in an infinite loop in try. A process crash, forced termination, or os._exit can also bypass usual cleanup.\n\n## A pending return\nPython evaluates a return expression before it runs finally. A new assignment to a local integer name does not change the selected return value.\n\nA change to a returned list is different. The pending return holds a reference to that list. The caller receives its changed contents.\n\n## A replaced outcome\nA return from finally overrides an earlier return. It can also suppress an exception that was propagating.\n\nA new exception from finally becomes the active failure. The earlier exception usually stays available as context.\n\nModern Python can warn about control flow that exits a finally block. Ordinary cleanup avoids these exits.\n\nThe usual operation determines a successful result. The finally block closes resources, releases locks, or restores temporary state.\n\nIf cleanup can fail, the two the initial error and the cleanup error matter. A repeated resource pattern usually belongs in a context manager. This gives the cleanup rule one implementation instead of copies across callers.",
+      "examples": [
+        {
+          "title": "Rebinding does not alter an evaluated integer return",
+          "code": "def value():\n    result = 1\n    try:\n        return result\n    finally:\n        result = 2\n        print(\"cleanup\", result)\n\nprint(value())",
+          "output": "cleanup 2\n1",
+          "explanation": "The return expression selects 1 before finally runs. The later local assignment changes result to 2 but does not replace that return.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "A try returns x=1; finally rebinds x=2. What reaches the caller?",
+          "options": [
+            "1",
+            "2",
+            "Always None"
+          ],
+          "answer": 0,
+          "explanation": "Python selects the integer return value before finally changes the local name."
+        },
+        {
+          "prompt": "What can return in finally do to a pending exception?",
+          "options": [
+            "Suppress it by replacing the outcome",
+            "Automatically log it",
+            "Turn it into KeyboardInterrupt"
+          ],
+          "answer": 0,
+          "explanation": "A return in finally replaces the pending exception with a successful result."
+        },
+        {
+          "prompt": "Can forced process termination bypass finally?",
+          "options": [
+            "Yes",
+            "Never",
+            "Only for file operations"
+          ],
+          "answer": 0,
+          "explanation": "A process can stop without usual Python cleanup."
+        }
+      ],
+      "part": "V",
+      "partTitle": "Concurrency, exceptions, and resources",
+      "source": "https://docs.python.org/3/reference/compound_stmts.html#finally-clause",
+      "confirmed": true
+    },
+    {
+      "id": 36,
+      "title": "Mutating dictionaries during iteration",
+      "subtitle": "The dictionary must keep the same key structure during its own traversal.",
+      "body": "## Live dictionary views\nA dictionary iterator visits keys. The keys, values, and items methods give live views. They do not give snapshots.\n\nAn addition or deletion during traversal can raise RuntimeError or miss intended entries. A deletion followed by an addition changes structure, even if the final size is unchanged.\n\n## An independent key list\nA removal list or list(data) gives the traversal its own key collection. Deletion can then use that collection instead of the live dictionary iterator.\n\nA full key snapshot uses O(n) extra references. A list of only k removal keys uses O(k). Neither operation deep-copies nested values.\n\nA replacement at an existing key does not change the key structure. The loop can update data[key] without adding or deleting a key. A nested-object change can cause a separate sharing error.\n\n## A new dictionary\nA comprehension makes a different filtered dictionary. A local reassignment of data does not update aliases of the old dictionary.\n\nA new result and an in-place change therefore have different effects. The application must select the correct behavior.\n\nA snapshot alone does not coordinate concurrent writers. A lock or one state owner can coordinate a shared multi-step update. The GIL does not define which application updates must occur together.",
+      "examples": [
+        {
+          "title": "Snapshot keys before deleting",
+          "code": "users = {\"ada\": True, \"grace\": False, \"lin\": True}\nfor name in list(users):\n    if not users[name]:\n        del users[name]\nprint(users)",
+          "output": "{'ada': True, 'lin': True}",
+          "explanation": "The loop reads a separate list of keys. Deletion from the dictionary does not change that list.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Is data.items() a snapshot?",
+          "options": [
+            "Yes",
+            "No, it is a live view",
+            "Only when empty"
+          ],
+          "answer": 1,
+          "explanation": "The view stays connected to the underlying dictionary."
+        },
+        {
+          "prompt": "Which operation changes key structure?",
+          "options": [
+            "Replacing data[existing_key]",
+            "Deleting a key",
+            "Mutating a nested list only"
+          ],
+          "answer": 1,
+          "explanation": "A deletion changes the key structure under traversal."
+        },
+        {
+          "prompt": "What does rebinding data to a comprehension do to aliases?",
+          "options": [
+            "Updates each alias",
+            "Leaves aliases pointing to the old dictionary",
+            "Deletes all aliases"
+          ],
+          "answer": 1,
+          "explanation": "A new local binding does not change the old dictionary or its aliases."
+        }
+      ],
+      "part": "V",
+      "partTitle": "Concurrency, exceptions, and resources",
+      "source": "https://docs.python.org/3/library/stdtypes.html#dictionary-view-objects",
+      "confirmed": true
+    },
+    {
+      "id": 37,
+      "title": "Context manager internals",
+      "subtitle": "The entry method supplies the as value. The exit method handles cleanup and error propagation.",
+      "body": "## Entry and exit\nA context manager implements `__enter__` and `__exit__`. The with statement assigns the enter result to the as variable. This result can differ from the manager itself.\n\nIf no exception leaves the body, exit receives three None values. After an exception, it receives the exception type, value, and traceback.\n\n## Exception suppression\nA truthy exit result suppresses the body's exception. A falsey result, usually None or False, permits propagation.\n\nSuppression is correct only for a failure that the manager can handle. A True result for each exception can hide programming errors or interruption.\n\nIf exit raises, its exception becomes active. The earlier error usually stays available as context.\n\n## Failed entry\nIf enter raises, Python does not call that manager's exit method. Entry must clean up any partial resource acquisition.\n\nPreviously entered outer managers exit. Managers enter from left to right and exit in reverse order.\n\n## Generator-based managers\nThe contextmanager decorator turns a generator into a context-manager factory. Code before its one yield acquires the resource. The yielded value becomes the as value.\n\nA finally block around yield releases the resource after body errors. A caught exception must propagate again unless suppression is intentional.\n\nExitStack manages a dynamic resource collection. Async managers use asynchronous entry and exit methods when these operations must await other work.",
+      "examples": [
+        {
+          "title": "Inspect exit arguments and narrow suppression",
+          "code": "class IgnoreValueError:\n    def __enter__(self):\n        print(\"enter\")\n        return \"resource\"\n    def __exit__(self, kind, error, traceback):\n        print(\"exit\", kind.__name__ if kind else None)\n        return kind is ValueError\n\nwith IgnoreValueError() as value:\n    print(value)\n    raise ValueError(\"expected\")\nprint(\"continued\")",
+          "output": "enter\nresource\nexit ValueError\ncontinued",
+          "explanation": "The exit method suppresses only the declared ValueError case. Other exception types propagate.",
+          "local": false
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What does as value receive?",
+          "options": [
+            "Always the manager itself",
+            "The result of __enter__",
+            "The result of __exit__"
+          ],
+          "answer": 1,
+          "explanation": "The enter result becomes the as value."
+        },
+        {
+          "prompt": "Does Python call exit if that manager's enter method raises?",
+          "options": [
+            "Yes always",
+            "No",
+            "Only for OSError"
+          ],
+          "answer": 1,
+          "explanation": "The entry method must handle cleanup after its own partial failure."
+        },
+        {
+          "prompt": "What does a truthy __exit__ return do when the body raises?",
+          "options": [
+            "Suppresses the exception",
+            "Repeats the body",
+            "Makes a new thread"
+          ],
+          "answer": 0,
+          "explanation": "A truthy exit result tells Python to suppress the body exception."
+        }
+      ],
+      "part": "V",
+      "partTitle": "Concurrency, exceptions, and resources",
+      "source": "https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers",
+      "confirmed": true
+    },
+    {
+      "id": 38,
+      "title": "The GIL and threading",
+      "subtitle": "Thread behavior is different for different workloads and Python builds.",
+      "body": "## Concurrency and parallelism\nConcurrency permits activities to progress during the same period. Parallelism executes work at the same time on multiple processing units.\n\nA conventional GIL-enabled CPython build limits Python bytecode execution across threads in one interpreter. More threads usually do not increase pure-Python CPU throughput across cores.\n\nBlocking I/O and some native extensions release the GIL. Threads can then overlap waits or permit native parallel work.\n\n## Interpreter builds\nCPython supports free-threaded builds from version 3.13. These builds can disable the GIL. Extensions and runtime configuration can affect the actual state.\n\nThe browser editor does not support the native thread example. The example can operate with Python installed on the computer.\n\n## Shared state\nFree threading does not remove synchronization requirements. A lock, thread-safe communication, or isolated worker state can coordinate a multi-step update. The GIL is not an application lock either.\n\nA bounded executor controls worker count. Result collection makes worker failures visible. Cancellation of a future does not necessarily stop an operation that already started.\n\nA sleep example shows overlap of waits. It does not show a CPU speed increase. A useful measurement includes actual work, startup, and data transfer.\n\nProcesses can give separate interpreters for conventional pure-Python CPU work. They also add serialization costs. A script entry guard can be necessary.",
+      "examples": [
+        {
+          "title": "A bounded thread pool for blocking tasks",
+          "code": "from concurrent.futures import ThreadPoolExecutor\nfrom time import sleep\n\ndef blocking_lookup(value):\n    sleep(0.01)\n    return value * 2\n\nwith ThreadPoolExecutor(max_workers=2) as pool:\n    print(list(pool.map(blocking_lookup, [1, 2, 3])))",
+          "output": "[2, 4, 6]",
+          "explanation": "The pool map operation keeps input result order. The sleep calls show overlapping waits, not a CPU performance increase.",
+          "local": true
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "What limits parallel pure-Python CPU work in conventional CPython?",
+          "options": [
+            "The GIL in a GIL-enabled build",
+            "All Python language specifications forbid threads",
+            "The list type"
+          ],
+          "answer": 0,
+          "explanation": "This limitation applies to a GIL-enabled build with pure-Python CPU work."
+        },
+        {
+          "prompt": "Do free-threaded builds remove all synchronization needs?",
+          "options": [
+            "Yes",
+            "No, shared multi-step invariants need coordination",
+            "Only for dictionaries"
+          ],
+          "answer": 1,
+          "explanation": "Shared multi-step operations must have coordination without a GIL."
+        },
+        {
+          "prompt": "Does a sleeping thread demo establish CPU speedup?",
+          "options": [
+            "Yes",
+            "No, it demonstrates overlap of waiting",
+            "Only if there are four workers"
+          ],
+          "answer": 1,
+          "explanation": "A sleep example measures overlapping waits, not useful CPU computation."
+        }
+      ],
+      "part": "V",
+      "partTitle": "Concurrency, exceptions, and resources",
+      "source": "https://docs.python.org/3/howto/free-threading-python.html",
+      "confirmed": true
+    },
+    {
+      "id": 39,
+      "title": "Asyncio and blocking calls",
+      "subtitle": "A blocking call on the event-loop thread delays other tasks on that loop.",
+      "body": "## Coroutine execution\nA call to an async function makes a coroutine object. An await runs it in the current task. The event loop can schedule the coroutine as a different task.\n\nA task keeps control until it returns, raises, or awaits an operation that suspends. An already-ready await result might not give a different task a turn.\n\n## Blocking operations\nThe time.sleep function and long Python loops can occupy the event-loop thread in async def. Other tasks must wait.\n\nThe asyncio.sleep coroutine gives a nonblocking delay. Async-aware clients give nonblocking I/O. The asyncio.to_thread function can move an existing blocking I/O call to a native thread.\n\nThis does not guarantee CPU parallelism under a conventional GIL.\n\n## Scheduling and cancellation\nAn await of A followed by an await of B is sequential. The gather function schedules work together and returns results in input order. TaskGroup gives a shared task scope with different failure behavior.\n\nLarge task collections must have limits to prevent excessive memory use or service load.\n\nCancellation usually raises CancelledError at a suspension point. Cleanup can use finally or async with before propagation.\n\nCancellation of a to_thread await does not guarantee that its thread stops. A timeout also cannot immediately interrupt code that blocks the loop.\n\nScripts use asyncio.run(main()). This browser uses await main() with its existing event loop.",
+      "examples": [
+        {
+          "title": "Cooperative waits let two tasks progress",
+          "code": "import asyncio\n\nasync def fetch(label):\n    print(\"start\", label)\n    await asyncio.sleep(0.01)\n    return label.upper()\n\nasync def main():\n    results = await asyncio.gather(fetch(\"a\"), fetch(\"b\"))\n    print(results)\n\nasyncio.run(main())",
+          "output": "start a\nstart b\n['A', 'B']",
+          "explanation": "The gather call starts the two operations. Its result list follows the input order. This browser uses a top-level await variant.",
+          "local": false,
+          "browserCode": "import asyncio\n\nasync def fetch(label):\n    print(\"start\", label)\n    await asyncio.sleep(0.01)\n    return label.upper()\n\nasync def main():\n    results = await asyncio.gather(fetch(\"a\"), fetch(\"b\"))\n    print(results)\n\n# Notebook entry point: the browser already has an event loop.\nawait main()"
+        }
+      ],
+      "quiz": [
+        {
+          "prompt": "Does async def automatically make time.sleep nonblocking?",
+          "options": [
+            "Yes",
+            "No",
+            "Only when returning a string"
+          ],
+          "answer": 1,
+          "explanation": "An async body can execute blocking code on the event-loop thread."
+        },
+        {
+          "prompt": "What does calling an async function produce?",
+          "options": [
+            "A coroutine object",
+            "An already completed result",
+            "A new OS thread"
+          ],
+          "answer": 0,
+          "explanation": "A call makes the coroutine. An await or task schedule runs it."
+        },
+        {
+          "prompt": "Does cancellation of a to_thread await always stop the thread?",
+          "options": [
+            "Yes",
+            "No, the running operation may continue",
+            "Only for sleep"
+          ],
+          "answer": 1,
+          "explanation": "The thread can continue after cancellation of the task that awaits it."
+        }
+      ],
+      "part": "V",
+      "partTitle": "Concurrency, exceptions, and resources",
+      "source": "https://docs.python.org/3/library/asyncio-task.html",
+      "confirmed": true
+    }
+  ],
+  "readingMinutes": 2,
+  "readingNote": "Lesson and main example. Quiz excluded.",
+  "languageStyle": "ASD-STE100 Issue 9 guidance"
+}
